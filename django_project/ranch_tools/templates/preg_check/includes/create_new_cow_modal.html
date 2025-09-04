@@ -1,0 +1,20 @@
+{% load static %}
+{% if cow %}
+<div id="createCowModal" class="create-cow-modal">
+    <div class="create-cow-modal-content">
+        <span class="close">&times;</span>
+        <h2>Create Cow With ID: "{{ cow.ear_tag_id }}"</h2>
+        <form method="post" action="{% url 'cow-create' %}">
+            {% csrf_token %}
+            <input type="hidden" name="ear_tag_id" value="{{ cow.ear_tag_id }}"/>
+            <div class="form-group">
+                <label for="edit_birth_year">Birth Year:</label>
+                <input type="number" id="edit_birth_year" name="birth_year" required>
+            </div>
+            <button type="submit">Create</button>
+            <button id="create-cow-modal-cancel-btn" type="button">Cancel</button>
+        </form>
+    </div>
+</div>
+
+{% endif %}

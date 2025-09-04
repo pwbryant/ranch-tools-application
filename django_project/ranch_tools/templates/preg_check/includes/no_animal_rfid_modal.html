@@ -1,0 +1,15 @@
+{% load static %}
+<div id="no-animal-rfid-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <p>There is no animal with RFID <b><span id="not-existing-rfid"></span></b> in the database.</p>
+        <p>If you are unsure if this animal already exists under a different ID, confirm this by searching using that ID.</p>
+        <form id="check-existing-eart-tag-form" action="" method="get">
+            {% csrf_token %}
+            <label for="search_ear_tag_id">Check for existing ear tag ID</label>
+            <input type="text" id="check_existing_ear_tag_id" name="check_existing_ear_tag_id" required>
+            <button id="check-existing-ear-tag-btn" type="button">Search</button>
+        </form>
+        <div id="check-existing-ear-tag-result"></div>
+    </div>
+</div>

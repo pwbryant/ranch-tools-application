@@ -1,0 +1,44 @@
+{% load custom_filters %}
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'preg_check/css/styles.css' %}">
+<div class="container">
+    <div class="breeding-season-container">
+        <h2>Current Breeding Season:</h2>
+        <!-- <input type="text" id="breeding-season-input" placeholder="YYYY" maxlength="4" pattern="\d{4}" title="Enter a 4-digit year" value="{{ current_breeding_season }}"> -->
+    </div>
+    <div class="content-row">
+        <table>
+            <thead>
+                <tr>
+                    <th></th>
+                    <!-- <th>Ear Tag ID</th> -->
+                    <th>Preg Status</th>
+                    <th>Check Date</th>
+                    <th>Breeding Season</th>
+                    {% if pregchecks|has_comments %}
+                        <th>Comments</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for pregcheck in pregchecks %}
+                    <tr>
+                        <!-- <td>< Add this inside your loop to generate an "edit" button for each result 
+                            <button class="edit-button" data-pregcheck-id="{{ pregcheck.id }}">Edit</button>
+                        </td> -->
+                        <td>{{ pregcheck.cow.ear_tag_id }}</td>
+                        {% if pregcheck.is_pregnant %}
+                            <td>Pregnant</td>
+                        {% else %}
+                            <td>Open</td>
+                        {% endif %}
+                        <td>{{ pregcheck.check_date }}</td>
+                        <td>{{ pregcheck.breeding_season }}</td>
+                        <td>{{ pregcheck.comments }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+

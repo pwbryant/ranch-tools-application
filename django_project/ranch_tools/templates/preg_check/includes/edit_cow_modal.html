@@ -1,0 +1,31 @@
+{% load static %}
+{% if cow %}
+<div id="editCowModal" class="cow-edit-modal">
+    <div class="cow-edit-modal-content">
+        <span class="close">&times;</span>
+        <h2>Edit Cow</h2>
+        <form method="post" action="{% url 'cow-update' pk=cow.id %}">
+            {% csrf_token %}
+            <div class="form-group">
+                <label for="edit_ear_tag_id">Ear Tag ID:</label>
+                <input type="text" id="edit_ear_tag_id" name="ear_tag_id" readonly value="{{ cow.ear_tag_id }}">
+            </div>
+            <div class="form-group">
+                <label for="edit_eid">Ear RFID:</label>
+                {% if cow.eid is None %}
+                    <input type="text" id="edit_eid" name="eid" value="">
+                {% else %}
+                    <input type="text" id="edit_eid" name="eid" value="{{ cow.eid }}">
+                {% endif %}
+            </div>
+            <div class="form-group">
+                <label for="edit_birth_year">Birth Year:</label>
+                <input type="number" id="edit_birth_year" name="birth_year" value="{{ cow.birth_year }}" required>
+            </div>
+            <button type="submit">Update</button>
+            <button id="edit-cow-modal-cancel-btn" type="button">Cancel</button>
+        </form>
+    </div>
+</div>
+
+{% endif %}

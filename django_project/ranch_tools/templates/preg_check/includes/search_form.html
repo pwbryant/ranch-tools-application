@@ -1,0 +1,25 @@
+{% load static %}
+<div class="form-container">
+    <form id="search-form" method="get" action="">
+        <div class="form-group">
+            {{ search_form.search_ear_tag_id.label_tag }}
+            {{ search_form.search_ear_tag_id }}
+        </div>
+        <div class="form-group">
+            {{ search_form.search_rfid.label_tag }}
+            {{ search_form.search_rfid }}
+        </div>
+        <!-- Render the search_birth_year field only if multiple_matches is True -->
+        <div class="form-group">
+            {{ search_form.search_birth_year.label_tag }}
+            {{ search_form.search_birth_year }}
+        </div>
+        <button type="submit">Search For Animal</button>
+        {% if animal_exists and not multiple_matches %}
+            <button id="edit-cow-btn" type="button">Edit Cow</button>
+            <button id="create-cow-btn" type="button">Create New Cow With ID: "{{ cow.ear_tag_id }}"</button>
+        {% endif %}
+     </form>
+   {% include 'preg_check/includes/results_container.html' %}
+</div>
+

@@ -1,0 +1,56 @@
+{% load static %}
+{% load custom_filters %}
+<div class="result-container">
+    {% if multiple_matches %}
+        <p>More than one animal is associated with this ID with birth years of
+            {% for birth_year in distinct_birth_years %}
+                {{ birth_year }}{% if not forloop.last %}, {% endif %}
+            {% endfor %}.
+            <br>Please provide the birth year to select the desired animal.
+        </p>
+    {% elif pregchecks %}
+        <table>
+            <thead>
+                <tr>
+                    <th></th>
+                    {% if all_preg_checks %}
+                        <th>Ear Tag ID</th>
+                    {% endif %}
+                    <th>Preg Status</th>
+                    <th>Check Date</th>
+                    <th>Breeding Season</th>
+                    {% if pregchecks|has_comments %}
+                        <th>Comments</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for pregcheck in pregchecks %}
+                    <tr>
+                        <td><!-- Add this inside your loop to generate an "edit" button for each result -->
+                            <button class="edit-button" data-pregcheck-id="{{ pregcheck.id }}">Edit</button>
+                        </td>
+                        {% if all_preg_checks %}
+                            <td>{{ pregcheck.cow.ear_tag_id }}</td>
+                        {% endif %}
+                        {% if pregcheck.is_pregnant %}
+                            <td>Pregnant</td>
+                        {% else %}
+                            <td>Open</td>
+                        {% endif %}
+                        <td>{{ pregcheck.check_date }}</td>
+                        <td>{{ pregcheck.breeding_season }}</td>
+                        {% if pregcheck.comments %}
+                            <td>{{ pregcheck.comments }}</td>
+                        {% endif %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        {% if search_form.is_bound %}
+            <p>Ear Tag ID not found</p>
+        {% endif %}
+    {% endif %}
+</div>
+

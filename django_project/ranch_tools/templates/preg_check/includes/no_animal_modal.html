@@ -1,0 +1,27 @@
+{% load static %}
+<div id="no-animal-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <p>There is no animal associated with this ID. To create / update, provide as much info as possible.</p>
+        <form id="create-animal-form" action="{% url 'cow-create-update' %}" method="post">
+            {% csrf_token %}
+            <p>
+                <label for="new_ear_tag_id">Ear Tag ID</label>
+                <input type="text" id="new_ear_tag_id" name="ear_tag_id" value="{{ ear_tag_id }}" required>
+    
+            </p>
+            <p>
+                <label for="new_birth_year">Birth Year</label>
+                <input type="text" id="new_birth_year" name="birth_year">
+                    
+            </p>
+            <p>
+                <label for="new_eid">RFID</label>
+                <input type="text" id="new_eid" name="eid">                    
+            </p>
+            <button id="create-animal-btn" type="submit">Create New / Update Existing</button>
+            <button id="cancel-create-btn" type="button">Cancel</button>
+        </form>
+    </div>
+</div>
+

@@ -1,0 +1,35 @@
+{% load custom_filters %}
+{% load static %}
+<link rel="stylesheet" type="text/css" href="{% static 'preg_check/css/styles.css' %}">
+
+
+<div class="container">
+    <div class="breeding-season-container">
+        <h2>Current Breeding Season:</h2>
+        <input type="text" id="breeding-season-input" placeholder="YYYY" maxlength="4" pattern="\d{4}" title="Enter a 4-digit year" value="{{ current_breeding_season }}">
+    </div>
+    <div class="content-row">
+        {% include 'preg_check/includes/stats_content.html' %}
+        {% include 'preg_check/includes/previous_pregcheck_list.html' %}
+        {% include 'preg_check/includes/search_form.html' %}
+        {% include 'preg_check/includes/pregcheck_form.html' %}
+        {% include 'preg_check/includes/message_modal.html' %}
+        {% include 'preg_check/includes/no_animal_modal.html' %}
+        {% include 'preg_check/includes/no_animal_rfid_modal.html' %}
+        {% include 'preg_check/includes/edit_preg_check_modal.html' %}
+        {% include 'preg_check/includes/edit_cow_modal.html' %}
+        {% include 'preg_check/includes/create_new_cow_modal.html' %}
+    </div>
+</div>
+
+<script type="text/javascript">
+    <!-- define vars to be used by external js files -->
+    const pregcheckSummaryStatsUrl = "{% url 'pregcheck-summary-stats' %}";
+    const previousPregcheckUrl = "{% url 'previous-pregchecks' %}";
+    const animalExists = "{{ animal_exists }}" === "True";
+    const pregchecksUrl = "{% url 'pregcheck-list' %}";
+    const latestBreedingSeason = {{ latest_breeding_season }};
+</script>
+
+<script type="text/javascript" src="{% static 'preg_check/js/script.js' %}"></script>
+

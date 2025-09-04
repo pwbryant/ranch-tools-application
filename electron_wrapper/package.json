@@ -1,0 +1,62 @@
+{
+  "name": "ranch-tools-electron",
+  "version": "1.1.0",
+  "description": "Ranch Tools Desktop Application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build-win": "electron-builder --win",
+    "dist": "npm run build"
+  },
+  "build": {
+    "appId": "com.paulbryant.ranchtools",
+    "productName": "Ranch Tools",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!node_modules/.cache"
+    ],
+    "extraResources": [
+      {
+        "from": "../django_project",
+        "to": "django_project",
+        "filter": [
+          "**/*",
+          "!venv/**/*",
+          "!**/__pycache__/**/*",
+          "!**/*.pyc"
+        ]
+      },
+      {
+        "from": "python-embed",
+        "to": "python-embed",
+        "filter": ["**/*"]
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "allowElevation": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": false
+    }
+  },
+  "author": "Paul Bryant",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^37.4.0",
+    "electron-builder": "^26.0.12"
+  },
+  "dependencies": {
+    "cross-spawn": "^7.0.6",
+    "fs": "^0.0.1-security",
+    "path": "^0.12.7"
+  }
+}

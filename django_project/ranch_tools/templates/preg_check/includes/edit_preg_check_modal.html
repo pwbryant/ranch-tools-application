@@ -1,0 +1,46 @@
+<!-- Add this modal at the end of your HTML -->
+<div id="edit-modal" class="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Edit Pregnancy Record</h2>
+        <form id="edit-pregcheck-form" method="post" action=""> 
+            {% csrf_token %}
+            <input type="hidden" id="edit-pregcheck-id" name="pregcheck_id" value="">
+            <div class="form-group">
+                <label for="edit-ear-tag-id">Ear Tag ID:</label>
+                <input id="edit-ear-tag-id" name="ear_tag_id"/>
+            </div>
+            <div class="form-group">
+                <label for="edit-birth-year">Birth Year:</label>
+                <input id="edit-birth-year" name="birth_year" placeholder="Optional"/>
+            </div>
+            <div class="form-group">
+                <label for="edit-breeding-season">Breeding Season:</label>
+                <input id="edit-breeding-season" name="breeding_season"/>
+            </div>
+            <div class="form-group">
+                <label for="edit-check_date">Check Date</label>
+                <input id="edit-check_date" name="check_date"/>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="edit-is_pregnant">Is Pregnant:</label>
+                <select id="edit-is_pregnant" name="is_pregnant">
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="edit-comments">Comments:</label>
+                <textarea id="edit-comments" name="comments" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="edit-recheck">Recheck</label>
+                <input id="edit-recheck" type="checkbox" name="recheck"/>
+            </div>
+            <!-- Add more form fields as needed -->
+            <input type="submit" value="Save">
+        </form>
+    </div>
+</div>
+

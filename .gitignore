@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+django_project/venv/
+*.egg-info/
+.pytest_cache/
+
+# Node.js
+electron_wrapper/node_modules/
+electron_wrapper/npm-debug.log*
+electron_wrapper/python-embed/
+
+# Build outputs
+electron_wrapper/dist/
+build/
+django_project/venv/

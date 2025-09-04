@@ -1,0 +1,9 @@
+.idea/
+db.sqlite3
+*.sqlite3
+**/__pycache__/
+.ipynb_checkpoints
+*.swp
+*.swo
+pytest.ini
+local/

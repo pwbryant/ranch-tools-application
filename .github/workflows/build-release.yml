@@ -47,7 +47,7 @@ jobs:
         run: |
           mkdir python-embed
           curl -o python-embed.zip https://www.python.org/ftp/python/3.9.13/python-3.9.13-embed-amd64.zip
-          tar -xf python-embed.zip -C python-embed
+          unzip python-embed.zip -d python-embed
           curl -o python-embed/get-pip.py https://bootstrap.pypa.io/get-pip.py
           
       - name: Setup Python embeddable (Windows)

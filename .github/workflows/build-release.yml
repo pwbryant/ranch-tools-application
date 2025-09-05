@@ -23,8 +23,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: electron_wrapper/package-lock.json
       
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -33,7 +31,13 @@ jobs:
       
       - name: Install Node.js dependencies
         working-directory: ./electron_wrapper
-        run: npm ci
+        run: |
+          echo "Current directory:"
+          pwd
+          echo "Files in current directory:"
+          ls -la
+          echo "Running npm ci..."
+          npm ci
       
       - name: Download Python embeddable (Windows)
         if: matrix.os == 'windows-latest'

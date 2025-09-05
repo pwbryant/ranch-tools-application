@@ -31,17 +31,19 @@ jobs:
       
       - name: Install Node.js dependencies
         working-directory: ./electron_wrapper
+        shell: bash
         run: |
           echo "Current directory:"
           pwd
           echo "Files in current directory:"
-          dir
+          ls -la
           echo "Running npm ci..."
           npm ci
       
       - name: Download Python embeddable (Windows)
         if: matrix.os == 'windows-latest'
         working-directory: ./electron_wrapper
+        shell: bash
         run: |
           mkdir python-embed
           curl -o python-embed.zip https://www.python.org/ftp/python/3.9.13/python-3.9.13-embed-amd64.zip
@@ -51,6 +53,7 @@ jobs:
       - name: Setup Python embeddable (Windows)
         if: matrix.os == 'windows-latest'
         working-directory: ./electron_wrapper/python-embed
+        shell: powershell
         run: |
           # Enable pip by uncommenting import site
           (Get-Content python39._pth) | ForEach-Object { $_ -replace '#import site', 'import site' } | Set-Content python39._pth
@@ -62,6 +65,7 @@ jobs:
       - name: Download Python for macOS
         if: matrix.os == 'macos-latest'
         working-directory: ./electron_wrapper
+        shell: bash
         run: |
           mkdir -p python-embed/bin
           # Download Python framework installer
@@ -73,11 +77,13 @@ jobs:
       - name: Install Python packages (macOS)
         if: matrix.os == 'macos-latest'
         working-directory: ./electron_wrapper/python-embed
+        shell: bash
         run: |
           ./bin/python3 -m pip install --target ./lib/python3.9/site-packages -r ../../django_project/requirements.txt
       
       - name: Update main.js for cross-platform
         working-directory: ./electron_wrapper
+        shell: bash
         run: |
           node -e "
           const fs = require('fs');
@@ -100,11 +106,13 @@ jobs:
       - name: Build Electron app (Windows)
         if: matrix.os == 'windows-latest'
         working-directory: ./electron_wrapper
+        shell: bash
         run: npm run build-win
       
       - name: Build Electron app (macOS)
         if: matrix.os == 'macos-latest'
         working-directory: ./electron_wrapper
+        shell: bash
         run: npm run build-mac
         
       - name: Upload Windows artifacts

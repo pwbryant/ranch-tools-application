@@ -156,4 +156,4 @@ jobs:
           draft: false
           prerelease: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GT_PAT }}  # Use a personal access token with repo scope
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}  # Use a personal access token with repo scope

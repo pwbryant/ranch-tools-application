@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     # local apps
     'users',
     'ranch_tools.preg_check',
+    'ranch_tools.database_management',
 ]
 
 MIDDLEWARE = [

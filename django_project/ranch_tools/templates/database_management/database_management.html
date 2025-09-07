@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Management - Ranch Tools</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .card {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .card h3 {
+            margin-top: 0;
+            color: #495057;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .upload-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+        
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .btn-secondary:hover {
+            background: #545b62;
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .info-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .info-label {
+            font-weight: bold;
+            color: #495057;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            font-size: 18px;
+            color: #667eea;
+        }
+        
+        .messages {
+            margin-bottom: 20px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        #fileName {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Database Management</h1>
+            <p>Upload and manage your Ranch Tools database files</p>
+        </div>
+        
+        <div class="content">
+            <!-- Django Messages -->
+            {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <!-- Current Database Info -->
+            <div class="card">
+                <h3>Current Database</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <div class="info-label">Database File</div>
+                        <div class="info-value">{{ current_db }}</div>
+                    </div>
+                    {% if db_info.table_count %}
+                    <div class="info-item">
+                        <div class="info-label">Tables</div>
+                        <div class="info-value">{{ db_info.table_count }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Size</div>
+                        <div class="info-value">{{ db_info.size_mb }} MB</div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if db_info.sample_tables %}
+                <p><strong>Sample tables:</strong> {{ db_info.sample_tables|join:", " }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Upload New Database -->
+            <div class="card">
+                <h3>Upload New Database</h3>
+                <div class="warning">
+                    <strong>Warning:</strong> Uploading a new database will replace your current data. 
+                    A backup will be created automatically, but please ensure you have your own backups.
+                </div>
+                
+                <form method="post" enctype="multipart/form-data" id="uploadForm">
+                    {% csrf_token %}
+                    <div class="upload-area" onclick="document.getElementById('upload_db').click()">
+                        <div style="font-size: 48px; margin-bottom: 15px; color: #667eea;">📁</div>
+                        <p>Click here to select a database file</p>
+                        <p style="color: #6c757d; font-size: 14px;">Supported formats: .sqlite3</p>
+                        <div id="fileName"></div>
+                    </div>
+                    
+                    <input type="file" id="upload_db" name="upload_db" accept=".sqlite3" class="file-input">
+                    
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button type="submit" class="upload-btn" id="uploadBtn" disabled>
+                            Upload Database
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Backup Current Database -->
+            <div class="card">
+                <h3>Backup Current Database</h3>
+                <p>Create a backup copy of your current database for safekeeping.</p>
+                
+                <form method="post" id="backupForm">
+                    {% csrf_token %}
+                    <div style="text-align: center;">
+
+                        <button type="submit" name="create_backup" value="1" class="upload-btn btn-secondary">
+                            Create Backup
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Handle file selection
+        document.getElementById('upload_db').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name;
+            const fileNameDiv = document.getElementById('fileName');
+            const uploadBtn = document.getElementById('uploadBtn');
+            
+            if (fileName) {
+                fileNameDiv.textContent = `Selected: ${fileName}`;
+                uploadBtn.disabled = false;
+                uploadBtn.style.opacity = '1';
+            } else {
+                fileNameDiv.textContent = '';
+                uploadBtn.disabled = true;
+                uploadBtn.style.opacity = '0.5';
+            }
+        });
+        
+        // Handle form submission with confirmation
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
+            if (!confirm('Are you sure you want to replace the current database? This action cannot be undone (although a backup will be created).')) {
+                e.preventDefault();
+            }
+        });
+        
+        // Handle backup form
+        {% comment %} document.getElementById('backupForm').addEventListener('submit', function(e) {
+            const btn = e.target.querySelector('button');
+            btn.textContent = 'Creating Backup...';
+            btn.disabled = true;
+        }); {% endcomment %}
+    </script>
+</body>
+</html>

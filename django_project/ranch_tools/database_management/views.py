@@ -23,7 +23,17 @@ class DatabaseManagementView(View):
     def post(self, request):
         """Handle POST requests for database operations"""
         if 'upload_db' in request.FILES:
-            return self.handle_database_upload(request)
+            uploaded_file = request.FILES['upload_db']
+            ext = os.path.splitext(uploaded_file.name)[1].lower()
+            if ext not in ['.xlsx', '.xls', '.csv', '.sqlite3']:
+                messages.error(request, 'Invalid file type. Please upload a .sqlite3, .xlsx, .xls, or .csv file.')
+                return redirect('database_management')
+            uploaded_file = request.FILES['upload_db']
+            ext = os.path.splitext(uploaded_file.name)[1].lower()
+            if ext in ['.xlsx', '.xls', '.csv']:
+                return self.handle_excel_upload(request, uploaded_file)
+            elif ext == '.sqlite3':
+                return self.handle_database_upload(request)
         elif 'create_backup' in request.POST:
             return self.create_database_backup(request)
         
@@ -40,7 +50,88 @@ class DatabaseManagementView(View):
             'current_db': current_db_name,
             'db_info': db_info,
         }
-    
+
+    def handle_excel_upload(self, request, uploaded_file):
+        """Handle Excel/CSV file upload for Cow and PregCheck records"""
+        temp_path = self.save_temporary_file(uploaded_file)
+        if not temp_path:
+            return redirect('database_management')
+
+        df = self.read_excel_or_csv(temp_path, uploaded_file.name, request)
+        if df is None:
+            self.cleanup_temp_file(temp_path)
+            return redirect('database_management')
+
+        missing = self.validate_excel_columns(df)
+        if missing:
+            messages.error(request, f'Missing columns: {", ".join(missing)}')
+            self.cleanup_temp_file(temp_path)
+            return redirect('database_management')
+
+        errors = self.import_cow_pregcheck_records(df, request)
+        if errors:
+            messages.error(request, 'Some rows failed to import: ' + '; '.join(errors))
+        else:
+            messages.success(request, 'Excel/CSV data imported successfully.')
+
+        self.cleanup_temp_file(temp_path)
+        return redirect('database_management')
+
+    def read_excel_or_csv(self, temp_path, filename, request):
+        """Read Excel or CSV file into DataFrame"""
+        import pandas as pd
+        try:
+            if filename.endswith('.csv'):
+                df = pd.read_csv(temp_path)
+            else:
+                df = pd.read_excel(temp_path)
+            return df
+        except Exception as e:
+            messages.error(request, f'Error reading file: {str(e)}')
+            return None
+
+    def validate_excel_columns(self, df):
+        """Check for required columns in DataFrame"""
+        required_columns = [
+            'ear_tag_id', 'birth_year', 'eid', 'breeding_season',
+            'check_date', 'comments', 'is_pregnant', 'recheck'
+        ]
+        missing = [col for col in required_columns if col not in df.columns]
+        return missing
+
+    def import_cow_pregcheck_records(self, df, request):
+        """Validate and create Cow and PregCheck records from DataFrame"""
+        from ranch_tools.preg_check.models import Cow, PregCheck
+        import pandas as pd
+        errors = []
+        for idx, row in df.iterrows():
+            try:
+                ear_tag_id = str(row['ear_tag_id'])
+                birth_year = int(row['birth_year']) if pd.notnull(row['birth_year']) else None
+                eid = str(row['eid']) if pd.notnull(row['eid']) else None
+                breeding_season = int(row['breeding_season'])
+                check_date = pd.to_datetime(row['check_date']).date() if pd.notnull(row['check_date']) else None
+                comments = str(row['comments']) if pd.notnull(row['comments']) else ''
+                is_pregnant = bool(row['is_pregnant']) if pd.notnull(row['is_pregnant']) else None
+                recheck = bool(row['recheck']) if pd.notnull(row['recheck']) else False
+
+                cow, _ = Cow.objects.get_or_create(
+                    ear_tag_id=ear_tag_id,
+                    birth_year=birth_year,
+                    defaults={'eid': eid, 'comments': comments}
+                )
+                PregCheck.objects.create(
+                    breeding_season=breeding_season,
+                    check_date=check_date,
+                    comments=comments,
+                    cow=cow,
+                    is_pregnant=is_pregnant,
+                    recheck=recheck
+                )
+            except Exception as e:
+                errors.append(f'Row {idx+1}: {str(e)}')
+        return errors
+
     def handle_database_upload(self, request):
         """Handle database file upload"""
         uploaded_file = request.FILES['upload_db']

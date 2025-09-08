@@ -1,7 +1,7 @@
 import os
 import sqlite3
 import tempfile
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from django.contrib.messages import get_messages
 from django.contrib.sessions.middleware import SessionMiddleware
@@ -14,6 +14,44 @@ from ranch_tools.database_management.views import DatabaseManagementView
 
 
 class DatabaseManagementViewTestCase(TestCase):
+    @patch('ranch_tools.preg_check.models.Cow.objects.get_or_create')
+    @patch('ranch_tools.preg_check.models.PregCheck.objects.create')
+    def test_handle_excel_upload(self, mock_pregcheck_create, mock_cow_get_or_create):
+        """Test handle_excel_upload with valid Excel/CSV data"""
+
+        mockCow = MagicMock()
+        mock_cow_get_or_create.return_value = (mockCow, None,)
+
+        import pandas as pd
+        # Create a DataFrame with valid data
+        df = pd.DataFrame({
+            'ear_tag_id': ['A123'],
+            'birth_year': [2020],
+            'eid': ['EID001'],
+            'breeding_season': [2025],
+            'check_date': ['2025-09-07'],
+            'comments': ['Healthy'],
+            'is_pregnant': [True],
+            'recheck': [False]
+        })
+        # Save as CSV to temp file
+        temp_file = os.path.join(self.temp_dir, 'test_import.csv')
+        df.to_csv(temp_file, index=False)
+        with open(temp_file, 'rb') as f:
+            uploaded_file = SimpleUploadedFile('test_import.csv', f.read())
+
+        request = self.factory.post('/database-management/')
+        self.add_session_and_messages_middleware(request)
+
+        # Patch pandas.read_csv to return our DataFrame
+        with patch('pandas.read_csv', return_value=df):
+            response = self.view.handle_excel_upload(request, uploaded_file)
+
+        self.assertEqual(response.status_code, 302)  # Should redirect
+        mock_cow_get_or_create.assert_called_once()
+        mock_pregcheck_create.assert_called_once()
+        messages_list = list(get_messages(request))
+        self.assertTrue(any('imported successfully' in str(m) for m in messages_list))
     
     def setUp(self):
         self.factory = RequestFactory()
@@ -207,6 +245,7 @@ class DatabaseManagementViewTestCase(TestCase):
     
     def test_post_upload_invalid_extension(self):
         """Test POST with invalid file extension"""
+
         file_content = b"fake content"
         uploaded_file = SimpleUploadedFile("test.txt", file_content)
         
@@ -219,7 +258,7 @@ class DatabaseManagementViewTestCase(TestCase):
         
         self.assertEqual(response.status_code, 302)  # Redirect
         messages = list(get_messages(request))
-        self.assertTrue(any('valid SQLite database' in str(m) for m in messages))
+        self.assertTrue(any('Invalid file type. Please upload a .sqlite3, .xlsx, .xls, or .csv file.' in str(m) for m in messages))
     
     def test_post_upload_valid_file(self):
         """Test POST with valid SQLite file"""

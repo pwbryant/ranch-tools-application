@@ -14,6 +14,64 @@ from ranch_tools.database_management.views import DatabaseManagementView
 
 
 class DatabaseManagementViewTestCase(TestCase):
+    @patch.object(DatabaseManagementView, 'handle_excel_upload')
+    @patch.object(DatabaseManagementView, 'handle_database_upload')
+    @patch.object(DatabaseManagementView, 'create_database_backup')
+    def test_post_calls_expected_methods(self, mock_backup, mock_db_upload, mock_excel_upload):
+        """Test that post calls the correct handler based on POST type"""
+        # update_db (valid)
+        file_content = b"excel content"
+        uploaded_file = SimpleUploadedFile("update.xlsx", file_content)
+        request = self.factory.post('/database-management/')
+        request.FILES['update_db'] = uploaded_file
+        self.add_session_and_messages_middleware(request)
+        response = self.view.post(request)
+        mock_excel_upload.assert_called_once_with(request)
+        mock_db_upload.assert_not_called()
+        mock_backup.assert_not_called()
+
+        # upload_db (valid)
+        mock_excel_upload.reset_mock()
+        uploaded_file = SimpleUploadedFile("upload.sqlite3", b"sqlite content")
+        request = self.factory.post('/database-management/')
+        request.FILES['upload_db'] = uploaded_file
+        self.add_session_and_messages_middleware(request)
+        response = self.view.post(request)
+        mock_db_upload.assert_called_once_with(request)
+        mock_excel_upload.assert_not_called()
+        mock_backup.assert_not_called()
+
+        # create_backup
+        mock_db_upload.reset_mock()
+        request = self.factory.post('/database-management/', {'create_backup': '1'})
+        self.add_session_and_messages_middleware(request)
+        response = self.view.post(request)
+        mock_backup.assert_called_once_with(request)
+        mock_db_upload.assert_not_called()
+        mock_excel_upload.assert_not_called()
+
+        # update_db (invalid file type)
+        mock_backup.reset_mock()
+        uploaded_file = SimpleUploadedFile("update.txt", b"not excel")
+        request = self.factory.post('/database-management/')
+        request.FILES['update_db'] = uploaded_file
+        self.add_session_and_messages_middleware(request)
+        response = self.view.post(request)
+        self.assertEqual(response.status_code, 302)
+        messages_list = list(get_messages(request))
+        self.assertTrue(any('Invalid file type' in str(m) for m in messages_list))
+        mock_excel_upload.assert_not_called()
+
+        # upload_db (invalid file type)
+        uploaded_file = SimpleUploadedFile("upload.txt", b"not sqlite")
+        request = self.factory.post('/database-management/')
+        request.FILES['upload_db'] = uploaded_file
+        self.add_session_and_messages_middleware(request)
+        response = self.view.post(request)
+        self.assertEqual(response.status_code, 302)
+        messages_list = list(get_messages(request))
+        self.assertTrue(any('Invalid file type' in str(m) for m in messages_list))
+        mock_db_upload.assert_not_called()
     @patch('ranch_tools.preg_check.models.Cow.objects.get_or_create')
     @patch('ranch_tools.preg_check.models.PregCheck.objects.create')
     def test_handle_excel_upload(self, mock_pregcheck_create, mock_cow_get_or_create):
@@ -43,9 +101,10 @@ class DatabaseManagementViewTestCase(TestCase):
         request = self.factory.post('/database-management/')
         self.add_session_and_messages_middleware(request)
 
+        request.FILES['update_db'] = uploaded_file        
         # Patch pandas.read_csv to return our DataFrame
         with patch('pandas.read_csv', return_value=df):
-            response = self.view.handle_excel_upload(request, uploaded_file)
+            response = self.view.handle_excel_upload(request)
 
         self.assertEqual(response.status_code, 302)  # Should redirect
         mock_cow_get_or_create.assert_called_once()
@@ -258,7 +317,7 @@ class DatabaseManagementViewTestCase(TestCase):
         
         self.assertEqual(response.status_code, 302)  # Redirect
         messages = list(get_messages(request))
-        self.assertTrue(any('Invalid file type. Please upload a .sqlite3, .xlsx, .xls, or .csv file.' in str(m) for m in messages))
+        self.assertTrue(any('Invalid file type. Please upload a .sqlite3 file.' in str(m) for m in messages))
     
     def test_post_upload_valid_file(self):
         """Test POST with valid SQLite file"""

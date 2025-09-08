@@ -22,18 +22,22 @@ class DatabaseManagementView(View):
     
     def post(self, request):
         """Handle POST requests for database operations"""
-        if 'upload_db' in request.FILES:
-            uploaded_file = request.FILES['upload_db']
+
+        if 'update_db' in request.FILES:
+            uploaded_file = request.FILES['update_db']
             ext = os.path.splitext(uploaded_file.name)[1].lower()
-            if ext not in ['.xlsx', '.xls', '.csv', '.sqlite3']:
-                messages.error(request, 'Invalid file type. Please upload a .sqlite3, .xlsx, .xls, or .csv file.')
+            if ext not in ['.xlsx', '.xls', '.csv']:
+                messages.error(request, 'Invalid file type. Please upload a .xlsx, .xls, or .csv file.')
                 return redirect('database_management')
+            return self.handle_excel_upload(request)
+        elif 'upload_db' in request.FILES:
             uploaded_file = request.FILES['upload_db']
             ext = os.path.splitext(uploaded_file.name)[1].lower()
-            if ext in ['.xlsx', '.xls', '.csv']:
-                return self.handle_excel_upload(request, uploaded_file)
-            elif ext == '.sqlite3':
-                return self.handle_database_upload(request)
+            if ext != '.sqlite3':
+                messages.error(request, 'Invalid file type. Please upload a .sqlite3 file.')
+                return redirect('database_management')
+            return self.handle_database_upload(request)
+
         elif 'create_backup' in request.POST:
             return self.create_database_backup(request)
         
@@ -51,8 +55,9 @@ class DatabaseManagementView(View):
             'db_info': db_info,
         }
 
-    def handle_excel_upload(self, request, uploaded_file):
+    def handle_excel_upload(self, request):
         """Handle Excel/CSV file upload for Cow and PregCheck records"""
+        uploaded_file = request.FILES['update_db']
         temp_path = self.save_temporary_file(uploaded_file)
         if not temp_path:
             return redirect('database_management')
@@ -68,7 +73,7 @@ class DatabaseManagementView(View):
             self.cleanup_temp_file(temp_path)
             return redirect('database_management')
 
-        errors = self.import_cow_pregcheck_records(df, request)
+        errors = self.import_cow_pregcheck_records(df)
         if errors:
             messages.error(request, 'Some rows failed to import: ' + '; '.join(errors))
         else:
@@ -99,27 +104,41 @@ class DatabaseManagementView(View):
         missing = [col for col in required_columns if col not in df.columns]
         return missing
 
-    def import_cow_pregcheck_records(self, df, request):
+    def import_cow_pregcheck_records(self, df):
         """Validate and create Cow and PregCheck records from DataFrame"""
         from ranch_tools.preg_check.models import Cow, PregCheck
         import pandas as pd
         errors = []
         for idx, row in df.iterrows():
             try:
-                ear_tag_id = str(row['ear_tag_id'])
-                birth_year = int(row['birth_year']) if pd.notnull(row['birth_year']) else None
-                eid = str(row['eid']) if pd.notnull(row['eid']) else None
+                ear_tag_id = str(row['ear_tag_id']).strip()
+                birth_year = int(row['birth_year'])
+                eid = str(row['eid']).strip() if pd.notnull(row['eid']) else None
+
+                no_cow_id = not ear_tag_id and not eid
+                if not no_cow_id and not birth_year:
+                    errors.append(f'Row {idx+1}: birth_year is required when ear_tag_id or eid is provided')
+                    continue
+                
                 breeding_season = int(row['breeding_season'])
-                check_date = pd.to_datetime(row['check_date']).date() if pd.notnull(row['check_date']) else None
-                comments = str(row['comments']) if pd.notnull(row['comments']) else ''
-                is_pregnant = bool(row['is_pregnant']) if pd.notnull(row['is_pregnant']) else None
+                check_date = pd.to_datetime(row['check_date']).date()
+                comments = str(row['comments']).strip() if pd.notnull(row['comments']) else ''
+                is_pregnant = bool(row['is_pregnant'])
                 recheck = bool(row['recheck']) if pd.notnull(row['recheck']) else False
 
-                cow, _ = Cow.objects.get_or_create(
-                    ear_tag_id=ear_tag_id,
-                    birth_year=birth_year,
-                    defaults={'eid': eid, 'comments': comments}
-                )
+                if no_cow_id:
+                    cow = None
+                else:
+                    cow_id_params = {
+                        'ear_tag_id': ear_tag_id,
+                        'birth_year': birth_year,
+                        'eid': eid
+                    }
+                    for id_field in ('ear_tag_id', 'eid'):
+                        if not cow_id_params[id_field]:
+                            del cow_id_params[id_field] 
+                    cow, _ = Cow.objects.get_or_create(**cow_id_params)
+
                 PregCheck.objects.create(
                     breeding_season=breeding_season,
                     check_date=check_date,

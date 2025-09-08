@@ -200,6 +200,30 @@
                 <p><strong>Sample tables:</strong> {{ db_info.sample_tables|join:", " }}</p>
                 {% endif %}
             </div>
+
+            <!-- Update Database with Excel/CSV -->
+            <div class="card">
+                <h3>Update Database with Excel/CSV</h3>
+                <div class="warning">
+                    <strong>Info:</strong> Use this form to add new records to your current database by uploading an Excel or CSV file.<br>
+                    The file should contain columns matching the database fields (e.g., ear_tag_id, birth_year, eid, breeding_season, check_date, comments, is_pregnant, recheck).
+                </div>
+                <form method="post" enctype="multipart/form-data" id="updateForm">
+                    {% csrf_token %}
+                    <div class="upload-area" onclick="document.getElementById('update_db').click()">
+                        <div style="font-size: 48px; margin-bottom: 15px; color: #667eea;">📄</div>
+                        <p>Click here to select an Excel or CSV file to add records</p>
+                        <p style="color: #6c757d; font-size: 14px;">Supported formats: .xlsx, .xls, .csv</p>
+                        <div id="updateFileName"></div>
+                    </div>
+                    <input type="file" id="update_db" name="update_db" accept=".xlsx,.xls,.csv" class="file-input">
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button type="submit" class="upload-btn" id="updateBtn" disabled>
+                            Add Records
+                        </button>
+                    </div>
+                </form>
+            </div>
             
             <!-- Upload New Database -->
             <div class="card">
@@ -214,11 +238,11 @@
                     <div class="upload-area" onclick="document.getElementById('upload_db').click()">
                         <div style="font-size: 48px; margin-bottom: 15px; color: #667eea;">📁</div>
                         <p>Click here to select a database file</p>
-                        <p style="color: #6c757d; font-size: 14px;">Supported formats: .sqlite3, .xlsx, .xls, .csv</p>
+                        <p style="color: #6c757d; font-size: 14px;">Supported formats: .sqlite3</p>
                         <div id="fileName"></div>
                     </div>
                     
-                    <input type="file" id="upload_db" name="upload_db" accept=".sqlite3,.xlsx,.xls,.csv" class="file-input">
+                    <input type="file" id="upload_db" name="upload_db" accept=".sqlite3" class="file-input">
                     
                     <div style="text-align: center; margin-top: 20px;">
                         <button type="submit" class="upload-btn" id="uploadBtn" disabled>
@@ -261,6 +285,29 @@
                 fileNameDiv.textContent = '';
                 uploadBtn.disabled = true;
                 uploadBtn.style.opacity = '0.5';
+            }
+        });
+
+        // Handle update file selection
+        document.getElementById('update_db').addEventListener('change', function(e) {
+            const fileName = e.target.files[0]?.name;
+            const fileNameDiv = document.getElementById('updateFileName');
+            const updateBtn = document.getElementById('updateBtn');
+            if (fileName) {
+                fileNameDiv.textContent = `Selected: ${fileName}`;
+                updateBtn.disabled = false;
+                updateBtn.style.opacity = '1';
+            } else {
+                fileNameDiv.textContent = '';
+                updateBtn.disabled = true;
+                updateBtn.style.opacity = '0.5';
+            }
+        });
+
+        // Handle update form submission with confirmation
+        document.getElementById('updateForm').addEventListener('submit', function(e) {
+            if (!confirm('Are you sure you want to add records to the current database from this file?')) {
+                e.preventDefault();
             }
         });
         

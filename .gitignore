@@ -15,5 +15,7 @@ electron_wrapper/python-embed/
 
 # Build outputs
 electron_wrapper/dist/
+*.log
+electron_wrapper/debug.log
 build/
 django_project/venv/

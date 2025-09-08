@@ -87,7 +87,7 @@ function startDjango() {
     writeLog(`Django Path exists: ${fs.existsSync(DJANGO_PATH)}`);
     writeLog(`Python Path exists: ${fs.existsSync(PYTHON_PATH)}`);
 
-    const SETTINGS_MODULE = 'config.settings.dev';
+    const SETTINGS_MODULE = 'config.settings.base';
     
     // Fixed: Use djangoProcess (not debugProcess) and clean up the Python command
     djangoProcess = spawn(PYTHON_PATH, [

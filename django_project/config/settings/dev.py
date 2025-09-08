@@ -2,6 +2,11 @@ from .base import *
 
 
 ALLOWED_HOSTS = ['*']
+
+INSTALLED_APPS += [
+    'django_extensions',
+]
+
 NOTEBOOK_ARGUMENTS = [
     '--ip',
     '0.0.0.0',

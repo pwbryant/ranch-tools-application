@@ -20,6 +20,7 @@
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
             overflow: hidden;
+            position: relative;
         }
         
         .header {
@@ -66,6 +67,30 @@
             display: none;
         }
         
+        .nav-btn {
+            display: inline-block;
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 22px;
+            border-radius: 25px;
+            font-size: 16px;
+            text-decoration: none;
+            font-weight: 500;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+            transition: all 0.3s ease;
+            z-index: 10;
+        }
+
+        .nav-btn:hover {
+            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
+        }
+
         .upload-btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -159,6 +184,7 @@
 </head>
 <body>
     <div class="container">
+        <a class="nav-btn" href="/pregchecks">← Go to Preg Checks</a>
         <div class="header">
             <h1>Database Management</h1>
             <p>Upload and manage your Ranch Tools database files</p>

@@ -34,7 +34,9 @@
       {
         "from": "python-embed",
         "to": "python-embed",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
@@ -52,7 +54,7 @@
   "author": "Paul Bryant",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^37.4.0",
+    "electron": "^37.5.1",
     "electron-builder": "^26.0.12"
   },
   "dependencies": {

@@ -29,8 +29,21 @@ const DJANGO_PATH = isDev
     : path.join(process.resourcesPath, 'django_project');
 
 const PYTHON_PATH = isDev 
-    ? path.join(__dirname, 'python-embed', 'python.exe')
+    ? getPythonForDevelopment()
     : path.join(process.resourcesPath, 'python-embed', 'python.exe');
+
+function getPythonForDevelopment() {
+    // Check for virtual environment first (recommended for development)
+    const venvPython = path.join(__dirname, '..', 'django_project', 'venv', 'Scripts', 'python.exe');
+    if (fs.existsSync(venvPython)) {
+        console.log('Using virtual environment Python:', venvPython);
+        return venvPython;
+    }
+    
+    // Fall back to system Python
+    console.log('Virtual environment not found, using system Python');
+    return 'python'; // This will use whatever 'python' command is in PATH
+}
 
 console.log('Environment:', isDev ? 'Development' : 'Production');
 console.log('Django Path:', DJANGO_PATH);

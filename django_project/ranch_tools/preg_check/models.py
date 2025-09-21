@@ -8,7 +8,7 @@ class SingletonModel(models.Model):
 
     def save(self, *args, **kwargs):
         self.pk = 1
-        super(SingletonModel, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
         pass
@@ -27,6 +27,15 @@ class CurrentBreedingSeason(SingletonModel):
 
     def __str__(self):
         return self.__repr__()
+    
+    @classmethod
+    def load(cls):
+        from datetime import datetime
+        obj, created = cls.objects.get_or_create(
+            pk=1, 
+            defaults={'breeding_season': datetime.now().year}
+        )
+        return obj
 
 
 class Cow(models.Model):

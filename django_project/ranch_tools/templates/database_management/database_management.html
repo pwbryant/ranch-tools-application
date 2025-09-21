@@ -279,7 +279,7 @@
             </div>
             
             <!-- Backup Current Database -->
-            <div class="card">
+            {% comment %} <div class="card">
                 <h3>Backup Current Database</h3>
                 <p>Create a backup copy of your current database for safekeeping.</p>
                 
@@ -292,8 +292,25 @@
                         </button>
                     </div>
                 </form>
+            </div> {% endcomment %}
+
+            <div class="card">
+                <h3>Backup Current Database</h3>
+                <p>Create a backup copy of your current database for safekeeping.</p>
+                
+                <form method="post" id="backupForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="create_backup" value="1">
+                    <input type="hidden" name="backup_path" id="backupPath" value="">
+                    
+                    <div style="text-align: center;">
+                        <button type="button" id="backupBtn" class="upload-btn btn-secondary">
+                            Create Backup
+                        </button>
+                    </div>
+                </form>
             </div>
-        </div>
+
     </div>
 
     <script>
@@ -341,6 +358,52 @@
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
             if (!confirm('Are you sure you want to replace the current database? This action cannot be undone (although a backup will be created).')) {
                 e.preventDefault();
+            }
+        });
+
+        document.getElementById('backupBtn').addEventListener('click', async function() {
+            const btn = this;
+            const form = document.getElementById('backupForm');
+            const backupPathInput = document.getElementById('backupPath');
+            
+            // Check if we're in Electron environment
+            if (window.require) {
+                console.log('Running in Electron environment');
+                try {
+                    const { ipcRenderer } = window.require('electron');
+                    
+                    // Request file save dialog from main process
+                    const result = await ipcRenderer.invoke('show-save-dialog', {
+                        title: 'Save Database Backup',
+                        defaultPath: `ranch_tools_backup_${new Date().toISOString().slice(0, 10)}.sqlite3`,
+                        filters: [
+                            { name: 'SQLite Database', extensions: ['sqlite3', 'db'] },
+                            { name: 'All Files', extensions: ['*'] }
+                        ]
+                    });
+                    
+                    if (!result.canceled && result.filePath) {
+                        // User selected a location, set the path and submit form
+                        backupPathInput.value = result.filePath;
+                        
+                        btn.textContent = 'Creating Backup...';
+                        btn.disabled = true;
+                        
+                        // Submit the form to your existing Django view
+                        form.submit();
+                    }
+                } catch (error) {
+                    console.error('Error accessing Electron APIs:', error);
+                    alert('Error accessing file system. Please try again.');
+                }
+            } else {
+                console.log('Not running in Electron environment');
+                // Not in Electron - fallback behavior
+                if (confirm('Create backup with default name?')) {
+                    btn.textContent = 'Creating Backup...';
+                    btn.disabled = true;
+                    form.submit();
+                }
             }
         });
         

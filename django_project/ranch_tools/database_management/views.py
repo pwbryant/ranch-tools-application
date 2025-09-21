@@ -17,9 +17,21 @@ class DatabaseManagementView(View):
     
     def get(self, request):
         """Display the database management page"""
+        self.initialze_database_if_needed()
         context = self.get_context_data()
         return render(request, self.template_name, context)
     
+    def initialze_database_if_needed(self):
+        """Ensure the database is initialized"""
+        db_path = settings.DATABASES['default']['NAME']
+        if not os.path.exists(db_path) or os.path.getsize(db_path) == 0:
+            call_command('migrate', verbosity=0)
+            from ranch_tools.preg_check.models import CurrentBreedingSeason
+            if CurrentBreedingSeason.objects.count() == 0:
+                current_season = CurrentBreedingSeason.load()
+                current_season.breeding_season = datetime.now().year
+                current_season.save()
+
     def post(self, request):
         """Handle POST requests for database operations"""
 
@@ -261,7 +273,28 @@ class DatabaseManagementView(View):
     def create_database_backup(self, request):
         """Create a backup of current database"""
         current_db_path = settings.DATABASES['default']['NAME']
-        backup_path = self.create_backup_path(current_db_path, prefix='db_backup_')
+        
+        # Check if a custom backup path was provided from the form
+        custom_backup_path = request.POST.get('backup_path', '').strip()
+        
+        if custom_backup_path:
+            # Use the custom path provided by Electron file dialog
+            backup_path = custom_backup_path
+            
+            # Ensure the directory exists
+            backup_dir = os.path.dirname(backup_path)
+            if not os.path.exists(backup_dir):
+                try:
+                    os.makedirs(backup_dir)
+                except OSError as e:
+                    if request.headers.get('content-type') == 'application/json':
+                        return JsonResponse({'success': False, 'error': f'Could not create directory: {str(e)}'})
+                    messages.error(request, f'Could not create directory: {str(e)}')
+                    return redirect('database_management')
+        else:
+            # Use default backup path (your existing logic)
+            backup_path = self.create_backup_path(current_db_path, prefix='db_backup_')
+        
         try:
             shutil.copy2(current_db_path, backup_path)
             backup_name = os.path.basename(backup_path)
@@ -274,13 +307,17 @@ class DatabaseManagementView(View):
                     'backup_name': backup_name
                 })
             
-            messages.success(request, f'Backup created successfully: {backup_name}')
+            if custom_backup_path:
+                messages.success(request, f'Backup created successfully at: {backup_path}')
+            else:
+                messages.success(request, f'Backup created successfully: {backup_name}')
             
         except Exception as e:
             if request.headers.get('content-type') == 'application/json':
                 return JsonResponse({'success': False, 'error': str(e)})
             
             messages.error(request, f'Backup failed: {str(e)}')
+        
         return redirect('database_management')
     
     def create_backup_path(self, db_path, prefix='backup_'):

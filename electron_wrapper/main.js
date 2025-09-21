@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const spawn = require('cross-spawn');
 const path = require('path');
 const http = require('http');
@@ -245,6 +245,14 @@ function createWindow() {
 }
 
 app.whenReady().then(createWindow);
+
+
+// IPC handler for file save dialog
+ipcMain.handle('show-save-dialog', async (event, options) => {
+    const result = await dialog.showSaveDialog(mainWindow, options);
+    return result;
+});
+
 
 app.on('window-all-closed', () => {
     stopDjango();

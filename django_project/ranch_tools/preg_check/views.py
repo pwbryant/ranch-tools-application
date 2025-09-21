@@ -149,7 +149,12 @@ class PregCheckListView(ListView):
 
         context['current_breeding_season'] = current_breeding_season
         context['all_preg_checks'] = ear_tag_id.strip().lower() == 'all'
-        context['latest_breeding_season'] = PregCheck.objects.latest('id').breeding_season
+        latest_breeding_season = None
+        if PregCheck.objects.exists():
+            latest_breeding_season = PregCheck.objects.latest('id').breeding_season
+        else:
+            latest_breeding_season = current_breeding_season
+        context['latest_breeding_season'] = latest_breeding_season
         context['search_form'] = search_form
         context['pregcheck_form'] = pregcheck_form
         context['animal_exists'] = animal_exists

@@ -17,6 +17,8 @@ from ranch_tools.preg_check.forms import (
     PregCheckForm
 )
 from ranch_tools.preg_check.models import Cow, CurrentBreedingSeason, PregCheck
+from ranch_tools.utils.mixins import InitialzeDatabaseMixin
+
 
 from pdb import set_trace as bp
 
@@ -76,10 +78,14 @@ class PreviousPregCheckListView(View):
         return JsonResponse({'pregchecks': list(pregchecks)}, safe=False)
 
 
-class PregCheckListView(ListView):
+class PregCheckListView(ListView, InitialzeDatabaseMixin):
     model = PregCheck
     template_name = 'pregcheck_list.html'
     context_object_name = 'pregchecks'
+
+    def dispatch(self, request, *args, **kwargs):
+        self.initialze_database_if_needed()
+        return super().dispatch(request, *args, **kwargs)
 
     def get_queryset(self):
         ear_tag_id = self.request.GET.get('search_ear_tag_id', '')

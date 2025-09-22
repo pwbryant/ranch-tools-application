@@ -236,7 +236,7 @@ function createWindow() {
 
     // Wait for Django to be ready
     waitForDjango(() => {
-        mainWindow.loadURL('http://localhost:8000/database-management');
+        mainWindow.loadURL('http://localhost:8000/pregchecks');
     });
 
     mainWindow.on('closed', () => {

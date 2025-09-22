@@ -11,8 +11,10 @@ from django.views import View
 from django.db import connection
 from django.core.management import call_command
 
+from ranch_tools.utils.mixins import InitialzeDatabaseMixin
 
-class DatabaseManagementView(View):
+
+class DatabaseManagementView(View, InitialzeDatabaseMixin):
     template_name = 'database_management/database_management.html'
     
     def get(self, request):
@@ -20,17 +22,6 @@ class DatabaseManagementView(View):
         self.initialze_database_if_needed()
         context = self.get_context_data()
         return render(request, self.template_name, context)
-    
-    def initialze_database_if_needed(self):
-        """Ensure the database is initialized"""
-        db_path = settings.DATABASES['default']['NAME']
-        if not os.path.exists(db_path) or os.path.getsize(db_path) == 0:
-            call_command('migrate', verbosity=0)
-            from ranch_tools.preg_check.models import CurrentBreedingSeason
-            if CurrentBreedingSeason.objects.count() == 0:
-                current_season = CurrentBreedingSeason.load()
-                current_season.breeding_season = datetime.now().year
-                current_season.save()
 
     def post(self, request):
         """Handle POST requests for database operations"""

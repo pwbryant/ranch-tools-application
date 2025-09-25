@@ -277,23 +277,18 @@
                     </div>
                 </form>
             </div>
-            
+
+            <!-- Export Database to Excel -->
+            <div class="card">
+                <h3>Export Database to Excel</h3>
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="?export=true&include_empty=false" class="upload-btn" style="text-decoration: none;">
+                        Export Database
+                    </a>
+                </div>
+            </div>
+
             <!-- Backup Current Database -->
-            {% comment %} <div class="card">
-                <h3>Backup Current Database</h3>
-                <p>Create a backup copy of your current database for safekeeping.</p>
-                
-                <form method="post" id="backupForm">
-                    {% csrf_token %}
-                    <div style="text-align: center;">
-
-                        <button type="submit" name="create_backup" value="1" class="upload-btn btn-secondary">
-                            Create Backup
-                        </button>
-                    </div>
-                </form>
-            </div> {% endcomment %}
-
             <div class="card">
                 <h3>Backup Current Database</h3>
                 <p>Create a backup copy of your current database for safekeeping.</p>

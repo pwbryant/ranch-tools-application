@@ -3,25 +3,73 @@ import shutil
 import sqlite3
 from datetime import datetime
 
+import pandas as pd
+
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.conf import settings
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.views import View
 from django.db import connection
 from django.core.management import call_command
 
+from ranch_tools.preg_check.models import PregCheck
 from ranch_tools.utils.mixins import InitialzeDatabaseMixin
-
+      
 
 class DatabaseManagementView(View, InitialzeDatabaseMixin):
     template_name = 'database_management/database_management.html'
     
     def get(self, request):
-        """Display the database management page"""
+        """Handle GET requests - display page or export data"""
         self.initialze_database_if_needed()
+        
+        # Check if this is an export request
+        if 'export' in request.GET:
+            return self.handle_export_request(request)
+        
+        # Regular page display
         context = self.get_context_data()
         return render(request, self.template_name, context)
+
+    def handle_export_request(self, request):
+        """Handle export requests - exports complete database (Cows + PregChecks)"""
+        try:
+            return self.export_all_to_excel(request)
+        except Exception as e:
+            messages.error(request, f'Export failed: {str(e)}')
+            return redirect('database_management')
+
+    def export_all_to_excel(self, request):
+        """Export both Cow and PregCheck records to Excel with multiple sheets"""
+  
+        # Create Excel response
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="ranch_data_export.xlsx"'
+        
+        with pd.ExcelWriter(response, engine='openpyxl') as writer:
+            # Export PregChecks sheet (compatible with import format)
+            pregchecks = PregCheck.objects.select_related('cow').all()
+            
+            pregcheck_data = []
+            for pc in pregchecks:
+                pregcheck_data.append({
+                    'ear_tag_id': pc.cow.ear_tag_id if pc.cow else '',
+                    'birth_year': pc.cow.birth_year if pc.cow else '',
+                    'eid': pc.cow.eid if pc.cow else '',
+                    'breeding_season': pc.breeding_season,
+                    'check_date': pc.check_date,
+                    'comments': pc.comments,
+                    'is_pregnant': pc.is_pregnant,
+                    'recheck': pc.recheck,
+                })
+            
+            pregcheck_df = pd.DataFrame(pregcheck_data)
+            pregcheck_df.to_excel(writer, sheet_name='Pregnancy_Checks', index=False)
+        
+        return response
 
     def post(self, request):
         """Handle POST requests for database operations"""

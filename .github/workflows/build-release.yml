@@ -108,7 +108,15 @@ jobs:
         working-directory: ./electron_wrapper
         shell: bash
         run: npm run build-win
-      
+
+      - name: Fix macOS permissions
+        if: matrix.os == 'macos-latest'
+        working-directory: ./electron_wrapper
+        shell: bash
+        run: |
+          chmod -R 755 python-embed/bin/* || true
+          chmod -R 755 django_project || true
+
       - name: Build Electron app (macOS)
         if: matrix.os == 'macos-latest'
         working-directory: ./electron_wrapper
@@ -127,7 +135,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ranch-tools-macos
-          path: electron_wrapper/dist/*.dmg
+          path: electron_wrapper/dist/*.zip
 
   release:
     needs: build

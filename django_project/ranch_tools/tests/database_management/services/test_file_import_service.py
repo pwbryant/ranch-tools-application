@@ -9,8 +9,8 @@ Run tests with:
 
 from django.test import TestCase
 from django.core.exceptions import ValidationError
-from your_app.models import Cow, PregCheck  # Replace 'your_app' with your actual app name
-from your_app.services.pregcheck_import_service import PregCheckImportService, ImportError
+from ranch_tools.preg_check.models import Cow, PregCheck  # Replace 'your_app' with your actual app name
+from ranch_tools.database_management.services.file_import_service import PregCheckImportService, ImportError
 import pandas as pd
 from io import BytesIO
 from datetime import date
@@ -415,10 +415,8 @@ class PregCheckImportServiceTestCase(TestCase):
         ]
         
         excel_file = self.create_excel_file(data)
-        
         with self.assertRaises(ImportError):
             self.service.import_from_file(excel_file)
-        
         # Verify nothing was saved due to transaction rollback
         self.assertEqual(Cow.objects.count(), 0)
         self.assertEqual(PregCheck.objects.count(), 0)

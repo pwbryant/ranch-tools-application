@@ -22,12 +22,12 @@ Example usage in a view:
         
         return render(request, 'upload_form.html')
 """
-
+from io import BytesIO
 from django.db import transaction
 from django.core.exceptions import ValidationError
 from ranch_tools.preg_check.models import Cow, PregCheck  # Replace 'your_app' with your actual app name
 import pandas as pd
-from typing import Dict, Any, BinaryIO, List
+from typing import Dict, Any, BinaryIO
 
 
 class ImportError(Exception):
@@ -328,9 +328,13 @@ class PregCheckImportService:
         self.reset_stats()
         
         try:
-            # Read Excel file
-            df = pd.read_excel(file)
-            
+            # Read Excel file with ear_tag_id and eid as strings to preserve leading zeros
+            if '.csv' in getattr(file, 'name', '').lower():
+                df = pd.read_csv(file, dtype={'ear_tag_id': str, 'eid': str})
+            elif '.xlsx' in getattr(file, 'name', '').lower() or '.xls' in getattr(file, 'name', '').lower() or isinstance(file, BytesIO):
+                df = pd.read_excel(file, dtype={'ear_tag_id': str, 'eid': str})
+            else:
+                raise ValidationError('Unsupported file format. Please upload an Excel or CSV file.')        
             # Validate structure
             self.validate_dataframe(df)
             

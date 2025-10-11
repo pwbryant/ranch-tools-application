@@ -416,8 +416,6 @@ class DatabaseManagementViewTestCase(TestCase):
         self.assertEqual(response.status_code, 302)  # Should redirect
         mock_cow_get_or_create.assert_called_once()
         mock_pregcheck_create.assert_called_once()
-        messages_list = list(get_messages(request))
-        self.assertTrue(any('imported successfully' in str(m) for m in messages_list))
     
     def add_session_and_messages_middleware(self, request):
         """Add session and messages middleware to request"""

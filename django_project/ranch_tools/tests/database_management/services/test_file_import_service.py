@@ -139,7 +139,6 @@ class PregCheckImportServiceTestCase(TestCase):
         }]
         
         excel_file = self.create_excel_file(data)
-        
         with self.assertRaises(ValidationError) as context:
             self.service.import_from_file(excel_file)
         

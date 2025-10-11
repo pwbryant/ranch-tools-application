@@ -6,6 +6,7 @@ from datetime import datetime
 import pandas as pd
 
 from django.shortcuts import render, redirect
+from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
@@ -13,6 +14,7 @@ from django.views import View
 from django.db import connection
 from django.core.management import call_command
 
+from ranch_tools.database_management.services.file_import_service import PregCheckImportService
 from ranch_tools.preg_check.models import PregCheck
 from ranch_tools.utils.mixins import InitialzeDatabaseMixin
       
@@ -112,24 +114,10 @@ class DatabaseManagementView(View, InitialzeDatabaseMixin):
         temp_path = self.save_temporary_file(uploaded_file)
         if not temp_path:
             return redirect('database_management')
-
-        df = self.read_excel_or_csv(temp_path, uploaded_file.name, request)
-        if df is None:
-            self.cleanup_temp_file(temp_path)
-            return redirect('database_management')
-
-        missing = self.validate_excel_columns(df)
-        if missing:
-            messages.error(request, f'Missing columns: {", ".join(missing)}')
-            self.cleanup_temp_file(temp_path)
-            return redirect('database_management')
-
-        errors = self.import_cow_pregcheck_records(df)
-        if errors:
-            messages.error(request, 'Some rows failed to import: ' + '; '.join(errors))
-        else:
-            messages.success(request, 'Excel/CSV data imported successfully.')
-
+        try:
+            PregCheckImportService().import_from_file(uploaded_file, dry_run=True)
+        except ValidationError as e:
+            messages.error(request, f'Import failed: {str(e)}')
         self.cleanup_temp_file(temp_path)
         return redirect('database_management')
 

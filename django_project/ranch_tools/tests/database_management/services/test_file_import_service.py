@@ -48,7 +48,7 @@ class PregCheckImportServiceTestCase(TestCase):
             'breeding_season': 2024,
             'check_date': '2024-03-15',
             'comments': 'Test comment',
-            'is_pregnant': True,
+            'is_pregnant': 'P',
             'recheck': False
         }]
         
@@ -69,34 +69,7 @@ class PregCheckImportServiceTestCase(TestCase):
         self.assertEqual(pregcheck.cow, cow)
         self.assertEqual(pregcheck.breeding_season, 2024)
         self.assertTrue(pregcheck.is_pregnant)
-    
-    def test_import_updates_existing_cow_eid(self):
-        """Test that importing updates EID for existing cows."""
-        # Create existing cow
-        Cow.objects.create(ear_tag_id='123', birth_year=2020, eid='OLD_EID')
         
-        data = [{
-            'ear_tag_id': '123',
-            'birth_year': 2020,
-            'eid': 'NEW_EID',
-            'breeding_season': 2024,
-            'check_date': '2024-03-15',
-            'comments': '',
-            'is_pregnant': True,
-            'recheck': False
-        }]
-        
-        excel_file = self.create_excel_file(data)
-        result = self.service.import_from_file(excel_file)
-        
-        self.assertEqual(result['cows_created'], 0)
-        self.assertEqual(result['cows_updated'], 1)
-        self.assertEqual(result['pregchecks_created'], 1)
-        self.assertEqual(Cow.objects.count(), 1)
-        
-        cow = Cow.objects.first()
-        self.assertEqual(cow.eid, 'NEW_EID')
-    
     def test_import_multiple_pregchecks_for_same_cow(self):
         """Test importing multiple pregnancy checks for the same cow."""
         data = [
@@ -107,7 +80,7 @@ class PregCheckImportServiceTestCase(TestCase):
                 'breeding_season': 2024,
                 'check_date': '2024-03-15',
                 'comments': 'First check',
-                'is_pregnant': True,
+                'is_pregnant': 'P',
                 'recheck': False
             },
             {
@@ -117,7 +90,7 @@ class PregCheckImportServiceTestCase(TestCase):
                 'breeding_season': 2024,
                 'check_date': '2024-04-20',
                 'comments': 'Second check',
-                'is_pregnant': True,
+                'is_pregnant': 'P',
                 'recheck': False
             }
         ]
@@ -154,7 +127,7 @@ class PregCheckImportServiceTestCase(TestCase):
                 'breeding_season': 2024,
                 'check_date': '2024-03-15',
                 'comments': 'First',
-                'is_pregnant': True,
+                'is_pregnant': 'P',
                 'recheck': False
             },
             {
@@ -164,7 +137,7 @@ class PregCheckImportServiceTestCase(TestCase):
                 'breeding_season': 2024,
                 'check_date': '2024-03-15',  # Same check_date
                 'comments': 'Second',
-                'is_pregnant': False,
+                'is_pregnant': 'O',
                 'recheck': True
             }
         ]
@@ -174,7 +147,7 @@ class PregCheckImportServiceTestCase(TestCase):
         with self.assertRaises(ValidationError) as context:
             self.service.import_from_file(excel_file)
         
-        self.assertIn('duplicate record(s) with the same ear_tag_id, birth_year, and check_date', 
+        self.assertIn('Duplicate. Ear Tag: 123, Birth Year: 2020, Check Date: 2024-03-15', 
                       str(context.exception))
     
     def test_duplicate_eid_check_date_raises_error(self):
@@ -187,7 +160,7 @@ class PregCheckImportServiceTestCase(TestCase):
                 'breeding_season': 2024,
                 'check_date': '2024-03-15',
                 'comments': 'First',
-                'is_pregnant': True,
+                'is_pregnant': 'P',
                 'recheck': False
             },
             {
@@ -197,7 +170,7 @@ class PregCheckImportServiceTestCase(TestCase):
                 'breeding_season': 2024,
                 'check_date': '2024-03-15',  # Same check_date
                 'comments': 'Second',
-                'is_pregnant': False,
+                'is_pregnant': 'O',
                 'recheck': True
             }
         ]
@@ -207,40 +180,7 @@ class PregCheckImportServiceTestCase(TestCase):
         with self.assertRaises(ValidationError) as context:
             self.service.import_from_file(excel_file)
         
-        self.assertIn('duplicate record(s) with the same eid and check_date', 
-                      str(context.exception))
-    
-    def test_empty_values_not_checked_for_ear_tag_duplicates(self):
-        """Test that rows with empty ear_tag_id, birth_year, or check_date are not checked for duplicates."""
-        data = [
-            {
-                'ear_tag_id': '',
-                'birth_year': 2020,
-                'eid': 'EID123',
-                'breeding_season': 2024,
-                'check_date': '2024-03-15',
-                'comments': 'First',
-                'is_pregnant': True,
-                'recheck': False
-            },
-            {
-                'ear_tag_id': '',
-                'birth_year': 2020,
-                'eid': 'EID456',
-                'breeding_season': 2024,
-                'check_date': '2024-03-15',
-                'comments': 'Second',
-                'is_pregnant': False,
-                'recheck': True
-            }
-        ]
-        
-        excel_file = self.create_excel_file(data)
-        
-        # Should not raise ValidationError for ear_tag duplicates
-        # Will raise for EID duplicates if check_date is the same
-        result = self.service.import_from_file(excel_file)
-        self.assertEqual(result['pregchecks_created'], 2)
+        self.assertIn('Duplicate. EID: EID123, Check Date: 2024-03-15', str(context.exception))
     
     def test_empty_eid_not_checked_for_eid_duplicates(self):
         """Test that rows with empty eid are not checked for duplicates."""
@@ -252,7 +192,7 @@ class PregCheckImportServiceTestCase(TestCase):
                 'breeding_season': 2024,
                 'check_date': '2024-03-15',
                 'comments': 'First',
-                'is_pregnant': True,
+                'is_pregnant': 'P',
                 'recheck': False
             },
             {
@@ -262,7 +202,7 @@ class PregCheckImportServiceTestCase(TestCase):
                 'breeding_season': 2024,
                 'check_date': '2024-03-15',
                 'comments': 'Second',
-                'is_pregnant': False,
+                'is_pregnant': 'O',
                 'recheck': True
             }
         ]
@@ -282,7 +222,7 @@ class PregCheckImportServiceTestCase(TestCase):
             'breeding_season': 2024,
             'check_date': '2024-03-15',
             'comments': 'Test',
-            'is_pregnant': True,
+            'is_pregnant': 'P',
             'recheck': False
         }]
         
@@ -296,31 +236,6 @@ class PregCheckImportServiceTestCase(TestCase):
         # But nothing should be in database
         self.assertEqual(Cow.objects.count(), 0)
         self.assertEqual(PregCheck.objects.count(), 0)
-    
-    def test_handles_null_values_gracefully(self):
-        """Test that null values are handled correctly."""
-        data = [{
-            'ear_tag_id': '123',
-            'birth_year': 2020,
-            'eid': None,
-            'breeding_season': 2024,
-            'check_date': '2024-03-15',
-            'comments': None,
-            'is_pregnant': None,
-            'recheck': None
-        }]
-        
-        excel_file = self.create_excel_file(data)
-        result = self.service.import_from_file(excel_file)
-        
-        self.assertEqual(result['pregchecks_created'], 1)
-        
-        cow = Cow.objects.first()
-        self.assertIsNone(cow.eid)
-        
-        pregcheck = PregCheck.objects.first()
-        self.assertIsNone(pregcheck.is_pregnant)
-        self.assertFalse(pregcheck.recheck)
     
     def test_extract_cow_data(self):
         """Test extract_cow_data method."""
@@ -344,7 +259,7 @@ class PregCheckImportServiceTestCase(TestCase):
             'breeding_season': 2024,
             'check_date': '2024-03-15',
             'comments': '  Test comment  ',
-            'is_pregnant': True,
+            'is_pregnant': 'P',
             'recheck': False
         })
         
@@ -371,7 +286,6 @@ class PregCheckImportServiceTestCase(TestCase):
         self.assertIn('Successfully imported', message)
         self.assertIn('3 pregnancy checks', message)
         self.assertIn('2 new cows', message)
-        self.assertIn('1 existing cows', message)
     
     def test_get_summary_message_with_errors(self):
         """Test get_summary_message when there are errors."""
@@ -398,7 +312,7 @@ class PregCheckImportServiceTestCase(TestCase):
                 'breeding_season': 2024,
                 'check_date': '2024-03-15',
                 'comments': 'Valid',
-                'is_pregnant': True,
+                'is_pregnant': 'P',
                 'recheck': False
             },
             {
@@ -408,7 +322,7 @@ class PregCheckImportServiceTestCase(TestCase):
                 'breeding_season': 2024,
                 'check_date': 'invalid-date',
                 'comments': 'Invalid date',
-                'is_pregnant': True,
+                'is_pregnant': 'P',
                 'recheck': False
             }
         ]

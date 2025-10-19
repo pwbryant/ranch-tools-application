@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
+from django.utils.html import mark_safe
 from django.views import View
 from django.db import connection
 from django.core.management import call_command
@@ -115,9 +116,10 @@ class DatabaseManagementView(View, InitialzeDatabaseMixin):
         if not temp_path:
             return redirect('database_management')
         try:
-            PregCheckImportService().import_from_file(uploaded_file, dry_run=True)
+            PregCheckImportService().import_from_file(uploaded_file, dry_run=False)
         except ValidationError as e:
-            messages.error(request, f'Import failed: {str(e)}')
+            messages.error(request, mark_safe(f'Import failed: {str(e)}'))
+
         self.cleanup_temp_file(temp_path)
         return redirect('database_management')
 

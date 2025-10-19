@@ -23,12 +23,16 @@ Example usage in a view:
         return render(request, 'upload_form.html')
 """
 from io import BytesIO
-from django.db import transaction
-from django.core.exceptions import ValidationError
-from ranch_tools.preg_check.models import Cow, PregCheck  # Replace 'your_app' with your actual app name
-import pandas as pd
+import logging
 from typing import Dict, Any, BinaryIO
 
+from django.db import transaction
+from django.core.exceptions import ValidationError
+import pandas as pd
+
+from ranch_tools.preg_check.models import Cow, PregCheck  # Replace 'your_app' with your actual app name
+
+logger = logging.getLogger(__name__)
 
 class ImportError(Exception):
     """Custom exception for import errors."""
@@ -51,11 +55,25 @@ class PregCheckImportService:
         """Reset import statistics."""
         self.stats = {
             'cows_created': 0,
-            'cows_updated': 0,
             'pregchecks_created': 0,
             'errors': []
         }
 
+    def standardize_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
+        # 'is_pregant' needs to be lowercase
+        df['is_pregnant'] = df['is_pregnant'].apply(
+            lambda x: str(x).strip().lower() if pd.notna(x) else x
+        )
+        # convert is_pregnant to boolean
+        df['is_pregnant'] = df['is_pregnant'].map(
+            {'t': True, 'f': False, 'p': True, 'o': False}
+        )
+
+        # assert that is_pregnant only contains True, False, or NaN
+        if not df['is_pregnant'].isin([True, False]).all():
+            raise ValidationError('Invalid values in "is_pregnant" column. Use T/F or P/O.')
+        return df
+    
     def validate_dataframe(self, df: pd.DataFrame) -> None:
         """
         Validate that the dataframe has all required columns and no duplicates.
@@ -71,6 +89,12 @@ class PregCheckImportService:
         if missing_columns:
             raise ValidationError(f'Missing required columns: {", ".join(missing_columns)}')
         
+        # Check for empty values in required fields
+        required_fields = ['check_date', 'is_pregnant']
+        for field in required_fields:
+            if df[field].isnull().any() or (df[field].apply(lambda x: isinstance(x, str) and x.strip() == '')).any():
+                raise ValidationError(f'Required field "{field}" contains empty values')
+
         # Create a temporary dataframe with cleaned data for duplicate checking
         df_check = df.copy()
         df_check['ear_tag_id'] = df_check['ear_tag_id'].apply(
@@ -87,12 +111,24 @@ class PregCheckImportService:
         )
         
         # Check for duplicates based on ear_tag_id, birth_year, and check_date
-        self._check_duplicates_by_ear_tag(df_check)
+        ear_tag_duplicates = self._check_duplicates_by_ear_tag(df_check)
         
         # Check for duplicates based on eid and check_date
-        self._check_duplicates_by_eid(df_check)
+        eid_duplicates = self._check_duplicates_by_eid(df_check)
+
+        duplicates = []
+        if ear_tag_duplicates:
+            duplicates.extend(ear_tag_duplicates)
+        if eid_duplicates:
+            duplicates.extend(eid_duplicates)
+
+        if duplicates:
+            from django.utils.html import mark_safe
+            error_list = '<ul>' + ''.join(f'<li>{d}</li>' for d in duplicates) + '</ul>'
+            error_msg = mark_safe(f'Found {len(duplicates)} duplicate records:<br>{error_list}')
+            raise ValidationError(error_msg)
     
-    def _check_duplicates_by_ear_tag(self, df_check: pd.DataFrame) -> None:
+    def _check_duplicates_by_ear_tag(self, df_check: pd.DataFrame) -> list[str]:
         """
         Check for duplicate records based on ear_tag_id, birth_year, and check_date.
         
@@ -134,22 +170,13 @@ class PregCheckImportService:
                 row_numbers = df_check[mask].index + 2  # +2 for Excel row numbers (1-indexed + header)
                 rows_str = ', '.join(map(str, row_numbers))
                 error_details.append(
-                    f"  - Ear Tag: {ear_tag}, Birth Year: {birth_year}, "
+                    f"Duplicate. Ear Tag: {ear_tag}, Birth Year: {birth_year}, "
                     f"Check Date: {check_date} (rows: {rows_str})"
                 )
             
-            error_message = (
-                f"Found {len(duplicate_groups)} duplicate record(s) with the same "
-                f"ear_tag_id, birth_year, and check_date:\n" +
-                '\n'.join(error_details[:10])  # Show first 10 duplicates
-            )
-            
-            if len(duplicate_groups) > 10:
-                error_message += f"\n  ... and {len(duplicate_groups) - 10} more duplicates"
-            
-            raise ValidationError(error_message)
+            return error_details
     
-    def _check_duplicates_by_eid(self, df_check: pd.DataFrame) -> None:
+    def _check_duplicates_by_eid(self, df_check: pd.DataFrame) -> list[str]:
         """
         Check for duplicate records based on eid and check_date.
         
@@ -174,11 +201,10 @@ class PregCheckImportService:
         
         # Find duplicates in the filtered data
         duplicates = df_check_filtered[df_check_filtered.duplicated(subset=duplicate_columns, keep=False)]
-        
+        error_details = []
         if not duplicates.empty:
             # Group duplicates to show which records are duplicated
             duplicate_groups = duplicates.groupby(duplicate_columns).size()
-            error_details = []
             
             for (eid, check_date), count in duplicate_groups.items():
                 # Find the row numbers for this duplicate group in the original dataframe
@@ -189,19 +215,10 @@ class PregCheckImportService:
                 row_numbers = df_check[mask].index + 2  # +2 for Excel row numbers (1-indexed + header)
                 rows_str = ', '.join(map(str, row_numbers))
                 error_details.append(
-                    f"  - EID: {eid}, Check Date: {check_date} (rows: {rows_str})"
+                    f"Duplicate. EID: {eid}, Check Date: {check_date} (rows: {rows_str})"
                 )
             
-            error_message = (
-                f"Found {len(duplicate_groups)} duplicate record(s) with the same "
-                f"eid and check_date:\n" +
-                '\n'.join(error_details[:10])  # Show first 10 duplicates
-            )
-            
-            if len(duplicate_groups) > 10:
-                error_message += f"\n  ... and {len(duplicate_groups) - 10} more duplicates"
-            
-            raise ValidationError(error_message)
+        return error_details
 
     def extract_cow_data(self, row: pd.Series) -> Dict[str, Any]:
         """
@@ -240,7 +257,7 @@ class PregCheckImportService:
             'recheck': bool(row['recheck']) if pd.notna(row['recheck']) else False,
         }
 
-    def get_or_create_cow(self, cow_data: Dict[str, Any]) -> tuple[Cow, bool, bool]:
+    def get_or_create_cow(self, cow_data: Dict[str, Any]) -> tuple[Cow, bool]:
         """
         Get or create a cow, updating EID if necessary.
         
@@ -248,24 +265,24 @@ class PregCheckImportService:
             cow_data: Dictionary containing cow data
             
         Returns:
-            Tuple of (cow instance, was_created, was_updated)
+            Tuple of (cow instance, was_created)
         """
-        cow, created = Cow.objects.get_or_create(
-            ear_tag_id=cow_data['ear_tag_id'],
-            birth_year=cow_data['birth_year'],
-            defaults={
-                'eid': cow_data['eid'],
-                'comments': cow_data['comments']
-            }
-        )
+        if cow_data['eid']:
+            cow, created = Cow.objects.get_or_create(
+                eid=cow_data['eid'],
+                birth_year=cow_data['birth_year'],
+                ear_tag_id=cow_data['ear_tag_id']
+            )
+        elif cow_data['ear_tag_id'] and cow_data['birth_year']:
+            cow, created = Cow.objects.get_or_create(
+                ear_tag_id=cow_data['ear_tag_id'],
+                birth_year=cow_data['birth_year']
+            )
+        else:
+            cow = None # Cow can be None if both eid and ear_tag_id/birth_year are missing
+            created = False
 
-        updated = False
-        if not created and cow_data['eid'] and cow.eid != cow_data['eid']:
-            cow.eid = cow_data['eid']
-            cow.save()
-            updated = True
-
-        return cow, created, updated
+        return cow, created
 
     def process_row(self, idx: int, row: pd.Series) -> Dict[str, bool]:
         """
@@ -279,14 +296,13 @@ class PregCheckImportService:
             Dictionary with processing results
         """
         cow_data = self.extract_cow_data(row)
-        cow, created, updated = self.get_or_create_cow(cow_data)
+        cow, created = self.get_or_create_cow(cow_data)
         
         pregcheck_data = self.extract_pregcheck_data(row, cow)
-        PregCheck.objects.create(**pregcheck_data)
+        pc = PregCheck.objects.create(**pregcheck_data)
         
         return {
             'cow_created': created,
-            'cow_updated': updated,
             'pregcheck_created': True
         }
 
@@ -302,8 +318,6 @@ class PregCheckImportService:
                 result = self.process_row(idx, row)
                 if result['cow_created']:
                     self.stats['cows_created'] += 1
-                if result['cow_updated']:
-                    self.stats['cows_updated'] += 1
                 if result['pregcheck_created']:
                     self.stats['pregchecks_created'] += 1
             except Exception as e:
@@ -337,6 +351,9 @@ class PregCheckImportService:
                 raise ValidationError('Unsupported file format. Please upload an Excel or CSV file.')        
             # Validate structure
             self.validate_dataframe(df)
+
+            # Standardize data
+            df = self.standardize_dataframe(df)
             
             # Process data within a transaction
             with transaction.atomic():
@@ -402,5 +419,4 @@ class PregCheckImportService:
                    f"Created {self.stats['pregchecks_created']} pregnancy checks, "
                    f"but {len(self.stats['errors'])} rows failed.")
         return (f"Successfully imported {self.stats['pregchecks_created']} pregnancy checks. "
-               f"Created {self.stats['cows_created']} new cows, "
-               f"updated {self.stats['cows_updated']} existing cows.")
+               f"Created {self.stats['cows_created']} new cows.")

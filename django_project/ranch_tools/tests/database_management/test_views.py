@@ -396,7 +396,7 @@ class DatabaseManagementViewTestCase(TestCase):
             'breeding_season': [2025],
             'check_date': ['2025-09-07'],
             'comments': ['Healthy'],
-            'is_pregnant': [True],
+            'is_pregnant': ['P'],
             'recheck': [False]
         })
         # Save as CSV to temp file

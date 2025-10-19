@@ -19,3 +19,6 @@ electron_wrapper/dist/
 electron_wrapper/debug.log
 build/
 django_project/venv/
+
+# Misc
+.vscode/

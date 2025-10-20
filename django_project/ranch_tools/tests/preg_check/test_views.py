@@ -23,6 +23,54 @@ class CowExistsViewTest(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertJSONEqual(response.content, {'error': 'check_existing_ear_tag_id parameter is required'})
 
+
+class PregCheckReportFiveViewTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+
+    def test_report_five_renders(self):
+        response = self.client.get(reverse('pregcheck-report-5'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Report Five")
+        self.assertContains(response, "cow_birth_year")
+
+
+class PregCheckReportFiveCalculationsTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        # Ensure a current breeding season is present
+        self.current_season = CurrentBreedingSeason.objects.create(breeding_season=2025)
+
+    def test_pct_and_recheck_count_unique(self):
+        # Create two cows born in 2020
+        cow_a = Cow.objects.create(ear_tag_id='A1', birth_year=2020)
+        cow_b = Cow.objects.create(ear_tag_id='B1', birth_year=2020)
+
+        # Cow A: first check open, second check recheck and pregnant
+        PregCheck.objects.create(cow=cow_a, breeding_season=2025, is_pregnant=False, recheck=False)
+        PregCheck.objects.create(cow=cow_a, breeding_season=2025, is_pregnant=True, recheck=True)
+
+        # Cow B: single open
+        PregCheck.objects.create(cow=cow_b, breeding_season=2025, is_pregnant=False, recheck=False)
+
+        response = self.client.get(reverse('pregcheck-report-5'), {'breeding_season': 2025})
+        self.assertEqual(response.status_code, 200)
+
+        # Check expected values are rendered: first_pass_open should be 2? Actually:
+        # first_pass counts only the first check per cow: Cow A first is open, Cow B is open => first_pass_open = 2
+        self.assertContains(response, 'first_pass_open')
+
+        # The row for birth_year 2020 should show first_pass_open 2, preg_recheck_count 1, pct_pregnant 50.0%
+        content = response.content.decode('utf-8')
+        # crude checks
+        self.assertIn('2020', content)
+        self.assertIn('first_pass_open', content)
+        self.assertIn('first_pass_pregnant', content)
+        # Check for the numeric strings
+        self.assertIn('2', content)  # first_pass_open 2
+        self.assertIn('1', content)  # preg_recheck_count 1
+        self.assertIn('50.0%', content)
+
 class PreviousPregCheckListViewTest(TestCase):
     def setUp(self):
         self.client = Client()

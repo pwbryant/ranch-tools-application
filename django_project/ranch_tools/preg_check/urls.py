@@ -11,6 +11,7 @@ from ranch_tools.preg_check.views import (
     PregCheckRecordNewAnimalView,
     PregCheckSummaryStatsView,
     PreviousPregCheckListView,
+    PregCheckReportFive,
     UpdateCurrentBreedingSeasonView,
 )
 
@@ -27,6 +28,7 @@ urlpatterns = [
     path('pregchecks/previous-pregchecks/', PreviousPregCheckListView.as_view(), name='previous-pregchecks'),
     path('pregchecks/<int:pregcheck_id>/edit/', PregCheckEditView.as_view(), name='pregcheck-edit'),
     path('pregchecks/<int:pregcheck_id>/', PregCheckDetailView.as_view(), name='pregcheck-detail'),
+    path('pregchecks/report-5/', PregCheckReportFive.as_view(), name='pregcheck-report-5'),
     path('cow/exists/', CowExistsView.as_view(), name='cow-exists'),
 ]
 

@@ -59,6 +59,38 @@ class PregCheckImportService:
             'errors': []
         }
 
+    def assert_required_columns(self, df: pd.DataFrame) -> None:
+        """
+        Assert that the dataframe has all required columns.
+        
+        Args:
+            df: The pandas DataFrame to check
+            
+        Raises:
+            ValidationError: If required columns are missing
+        """
+        missing_columns = [col for col in self.REQUIRED_COLUMNS if col not in df.columns]
+        if missing_columns:
+            raise ValidationError(f'Missing required columns: {", ".join(missing_columns)}')
+
+    def remove_blank_rows(self, df: pd.DataFrame) -> pd.DataFrame:
+
+        # Check for missing columns
+        self.assert_required_columns(df)
+
+        # Remove fully blank rows: rows where all required columns are NaN or empty/whitespace-only
+        def _is_blank(val):
+            return pd.isna(val) or (isinstance(val, str) and val.strip() == '')
+
+        # Build mask of blank rows across required columns
+        required_cols = [c for c in self.REQUIRED_COLUMNS if c in df.columns]
+        if required_cols:
+            blank_mask = df[required_cols].applymap(_is_blank).all(axis=1)
+            # Keep only non-blank rows
+            df = df.loc[~blank_mask].reset_index(drop=True)
+            logger.debug(f"Removed {blank_mask.sum()} blank rows from dataframe")
+        return df
+
     def standardize_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
         # 'is_pregant' needs to be lowercase
         df['is_pregnant'] = df['is_pregnant'].apply(
@@ -85,9 +117,7 @@ class PregCheckImportService:
             ValidationError: If required columns are missing or duplicates exist
         """
         # Check for missing columns
-        missing_columns = [col for col in self.REQUIRED_COLUMNS if col not in df.columns]
-        if missing_columns:
-            raise ValidationError(f'Missing required columns: {", ".join(missing_columns)}')
+        self.assert_required_columns(df)
         
         # Check for empty values in required fields
         required_fields = ['check_date', 'is_pregnant']
@@ -349,11 +379,14 @@ class PregCheckImportService:
                 df = pd.read_excel(file, dtype={'ear_tag_id': str, 'eid': str})
             else:
                 raise ValidationError('Unsupported file format. Please upload an Excel or CSV file.')        
-            # Validate structure
-            self.validate_dataframe(df)
 
+            # Remove blank rows
+            df = self.remove_blank_rows(df)
             # Standardize data
             df = self.standardize_dataframe(df)
+
+            # Validate structure
+            self.validate_dataframe(df)
             
             # Process data within a transaction
             with transaction.atomic():

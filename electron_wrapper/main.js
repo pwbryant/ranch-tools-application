@@ -34,7 +34,7 @@ const PYTHON_PATH = isDev
 
 function getPythonForDevelopment() {
     // Check for virtual environment first (recommended for development)
-    const venvPython = path.join(__dirname, '..', 'django_project', 'venv', 'Scripts', 'python.exe');
+    const venvPython = path.join(__dirname, '..', 'django_project', 'v_env', 'Scripts', 'python.exe');
     if (fs.existsSync(venvPython)) {
         console.log('Using virtual environment Python:', venvPython);
         return venvPython;

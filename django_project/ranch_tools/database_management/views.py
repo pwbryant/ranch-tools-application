@@ -115,6 +115,14 @@ class DatabaseManagementView(View, InitialzeDatabaseMixin):
         temp_path = self.save_temporary_file(uploaded_file)
         if not temp_path:
             return redirect('database_management')
+
+        # Create backup (moved to helper)
+        backup_path = self.create_backup_for_import(request)
+        if not backup_path:
+            # create_backup_for_import already set messages on failure
+            self.cleanup_temp_file(temp_path)
+            return redirect('database_management')
+
         try:
             PregCheckImportService().import_from_file(uploaded_file, dry_run=False)
         except ValidationError as e:
@@ -122,6 +130,33 @@ class DatabaseManagementView(View, InitialzeDatabaseMixin):
 
         self.cleanup_temp_file(temp_path)
         return redirect('database_management')
+
+    def create_backup_for_import(self, request):
+        """Create a backup of the current DB prior to importing; returns backup_path or None on failure."""
+        current_db_path = settings.DATABASES['default']['NAME']
+        custom_backup_path = request.POST.get('backup_path', '').strip()
+
+        if custom_backup_path:
+            backup_path = custom_backup_path
+            backup_dir = os.path.dirname(backup_path) or '.'
+            try:
+                if not os.path.exists(backup_dir):
+                    os.makedirs(backup_dir, exist_ok=True)
+                shutil.copy2(current_db_path, backup_path)
+                messages.info(request, f'Backup created at: {backup_path}')
+                return backup_path
+            except Exception as e:
+                messages.error(request, f'Failed to create backup at specified location: {str(e)}')
+                return None
+        else:
+            backup_path = self.create_backup_path(current_db_path, prefix='import_backup_')
+            try:
+                shutil.copy2(current_db_path, backup_path)
+                messages.info(request, f'Backup created: {os.path.basename(backup_path)}')
+                return backup_path
+            except Exception as e:
+                messages.error(request, f'Failed to create backup before import: {str(e)}')
+                return None
 
     def read_excel_or_csv(self, temp_path, filename, request):
         """Read Excel or CSV file into DataFrame"""

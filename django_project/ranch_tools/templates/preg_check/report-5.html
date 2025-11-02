@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Report Five</title>
+</head>
+<body>
+    <h1>Report Five — Summary by Birth Year</h1>
+
+    <form method="get" action="">
+        <label for="breeding_season">Breeding season:</label>
+        <input type="text" id="breeding_season" name="breeding_season" value="{{ breeding_season }}" />
+        <button type="submit">Update Breeding Season</button>
+    </form>
+
+    <table border="1" cellpadding="6" cellspacing="0">
+        <thead>
+            <tr>
+                <th>cow_birth_year</th>
+                <th>age</th>
+                <th>first_pass_open</th>
+                <th>first_pass_pregnant</th>
+                <th>first_pass_total</th>
+                <th>preg_recheck_count</th>
+                <th>net_open</th>
+                <th>net_pregnant</th>
+                <th>pct_pregnant</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td>{{ row.cow_birth_year }}</td>
+                <td>{{ row.age }}</td>
+                <td>{{ row.first_pass_open }}</td>
+                <td>{{ row.first_pass_pregnant }}</td>
+                <td>{{ row.first_pass_total }}</td>
+                <td>{{ row.preg_recheck_count }}</td>
+                <td>{{ row.net_open }}</td>
+                <td>{{ row.net_pregnant }}</td>
+                <td>{{ row.pct_pregnant }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="9">No data for this season.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

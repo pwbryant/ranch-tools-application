@@ -115,7 +115,7 @@ class PregCheckListView(ListView, InitialzeDatabaseMixin):
         ear_tag_id = self.request.GET.get('search_ear_tag_id', '')
         rfid = self.request.GET.get('search_rfid', '')
         animals = get_matching_cows(ear_tag_id=ear_tag_id, rfid=rfid, birth_year=birth_year)
-        animal_exists = animals.exists()        
+        animal_exists = animals.exists()
 
         animal_count = animals.count()
         cow = None
@@ -535,12 +535,20 @@ class PregCheckDetailView(View):
     def get(self, request, pregcheck_id):
         # Retrieve the PregCheck object or return a 404 response if not found
         pregcheck = get_object_or_404(PregCheck, pk=pregcheck_id)
-        
         pregcheck_details = {
             'id': pregcheck.id,
             'is_pregnant': pregcheck.is_pregnant,
+            'check_date': pregcheck.check_date,
+            'breeding_season': pregcheck.breeding_season,
             'comments': pregcheck.comments,
             'recheck': pregcheck.recheck,
         }
+        cow = pregcheck.cow
+        if cow:
+            pregcheck_details.update({
+                'ear_tag_id': cow.ear_tag_id,
+                'rfid': cow.eid,
+                'animal_birth_year': cow.birth_year,
+            })
 
         return JsonResponse(pregcheck_details)

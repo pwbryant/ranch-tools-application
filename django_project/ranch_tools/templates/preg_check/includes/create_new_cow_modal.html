@@ -8,6 +8,10 @@
             {% csrf_token %}
             <input type="hidden" name="ear_tag_id" value="{{ cow.ear_tag_id }}"/>
             <div class="form-group">
+                <label for="edit_eid">RFID:</label>
+                <input type="text" id="edit_eid" name="eid" placeholder='Optional'/>
+            </div>
+            <div class="form-group">
                 <label for="edit_birth_year">Birth Year:</label>
                 <input type="number" id="edit_birth_year" name="birth_year" required>
             </div>

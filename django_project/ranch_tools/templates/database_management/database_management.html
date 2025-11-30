@@ -227,33 +227,24 @@
                 {% endif %}
             </div>
 
-            <!-- Update Database with Excel/CSV -->
+            <!-- Backup Current Database -->
             <div class="card">
-                <h3>Update Database with Excel/CSV</h3>
-                <div class="warning">
-                    <strong>Info:</strong> Use this form to add new records to your current database by uploading an Excel or CSV file.<br>
-                    The file should contain columns matching the database fields (e.g., ear_tag_id, birth_year, eid, breeding_season, check_date, comments, is_pregnant, recheck).
-                </div>
-                <form method="post" enctype="multipart/form-data" id="updateForm">
+                <h3>Backup Current Database</h3>
+                <p>Create a backup copy of your current database for safekeeping.</p>
+                
+                <form method="post" id="backupForm">
                     {% csrf_token %}
-                    <!-- Add hidden fields so the backend can receive backup instructions -->
                     <input type="hidden" name="create_backup" value="1">
-                    <input type="hidden" id="updateBackupPath" name="backup_path" value="">
-                    <div class="upload-area" onclick="document.getElementById('update_db').click()">
-                        <div style="font-size: 48px; margin-bottom: 15px; color: #667eea;">📄</div>
-                        <p>Click here to select an Excel or CSV file to add records</p>
-                        <p style="color: #6c757d; font-size: 14px;">Supported formats: .xlsx, .xls, .csv</p>
-                        <div id="updateFileName"></div>
-                    </div>
-                    <input type="file" id="update_db" name="update_db" accept=".xlsx,.xls,.csv" class="file-input">
-                    <div style="text-align: center; margin-top: 20px;">
-                        <button type="submit" class="upload-btn" id="updateBtn" disabled>
-                            Add Records
+                    <input type="hidden" name="backup_path" id="backupPath" value="">
+                    
+                    <div style="text-align: center;">
+                        <button type="button" id="backupBtn" class="upload-btn btn-secondary">
+                            Create Backup
                         </button>
                     </div>
                 </form>
             </div>
-            
+
             <!-- Upload New Database -->
             <div class="card">
                 <h3>Upload New Database</h3>
@@ -291,19 +282,28 @@
                 </div>
             </div>
 
-            <!-- Backup Current Database -->
+            <!-- Update Database with Excel/CSV -->
             <div class="card">
-                <h3>Backup Current Database</h3>
-                <p>Create a backup copy of your current database for safekeeping.</p>
-                
-                <form method="post" id="backupForm">
+                <h3>Update Database with Excel/CSV</h3>
+                <div class="warning">
+                    <strong>Info:</strong> Use this form to add new records to your current database by uploading an Excel or CSV file.<br>
+                    The file should contain columns matching the database fields (e.g., ear_tag_id, birth_year, eid, breeding_season, check_date, comments, is_pregnant, recheck).
+                </div>
+                <form method="post" enctype="multipart/form-data" id="updateForm">
                     {% csrf_token %}
+                    <!-- Add hidden fields so the backend can receive backup instructions -->
                     <input type="hidden" name="create_backup" value="1">
-                    <input type="hidden" name="backup_path" id="backupPath" value="">
-                    
-                    <div style="text-align: center;">
-                        <button type="button" id="backupBtn" class="upload-btn btn-secondary">
-                            Create Backup
+                    <input type="hidden" id="updateBackupPath" name="backup_path" value="">
+                    <div class="upload-area" onclick="document.getElementById('update_db').click()">
+                        <div style="font-size: 48px; margin-bottom: 15px; color: #667eea;">📄</div>
+                        <p>Click here to select an Excel or CSV file to add records</p>
+                        <p style="color: #6c757d; font-size: 14px;">Supported formats: .xlsx, .xls, .csv</p>
+                        <div id="updateFileName"></div>
+                    </div>
+                    <input type="file" id="update_db" name="update_db" accept=".xlsx,.xls,.csv" class="file-input">
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button type="submit" class="upload-btn" id="updateBtn" disabled>
+                            Add Records
                         </button>
                     </div>
                 </form>

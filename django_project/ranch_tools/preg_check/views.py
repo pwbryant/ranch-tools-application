@@ -514,6 +514,116 @@ class PregCheckReportFive(View):
         return render(request, 'preg_check/report-5.html', context)
 
 
+class PregCheckRollingAverageReport(View):
+    """
+    Rolling 4-year average pregnancy rates by age class.
+    Displays pregnancy rates for each age class across recent breeding seasons
+    and computes a rolling 4-year average.
+    """
+    def get(self, request, *args, **kwargs):
+        # Get all unique breeding seasons in descending order
+        all_seasons = PregCheck.objects.values_list('breeding_season', flat=True).distinct().order_by('-breeding_season')
+        if not all_seasons.exists():
+            # No data available
+            return render(request, 'preg_check/rolling-average-report.html', {
+                'seasons': [],
+                'rows': [],
+            })
+        
+        seasons_list = sorted(list(all_seasons), reverse=True)[:4]  # Get last 4 seasons
+        seasons_list.sort()  # Sort ascending for display order
+        
+        # Collect all unique birth years across all seasons
+        all_cows = Cow.objects.filter(pregcheck__isnull=False).distinct()
+        birth_years = set()
+        for cow in all_cows:
+            if cow.birth_year is not None:
+                birth_years.add(cow.birth_year)
+        
+        # For each season, calculate pregnancy rates by age class
+        pregnancy_rates_by_season_and_age = {}
+        for season in seasons_list:
+            pregnancy_rates_by_season_and_age[season] = {}
+            
+            # Get all pregchecks for this season
+            season_pregchecks = PregCheck.objects.filter(
+                breeding_season=season
+            ).select_related('cow').order_by('cow_id', 'check_date', 'created_on')
+            
+            # Group by cow to get first check only
+            first_check_by_cow = {}
+            for pc in season_pregchecks:
+                if pc.cow and pc.cow.birth_year is not None:
+                    cow_key = f"cow-{pc.cow.id}"
+                    if cow_key not in first_check_by_cow:
+                        first_check_by_cow[cow_key] = pc
+            
+            # Aggregate by birth year (which becomes age class for this season)
+            stats_by_birth_year = {}
+            for pc in first_check_by_cow.values():
+                if pc.cow and pc.cow.birth_year is not None:
+                    birth_year = pc.cow.birth_year
+                    age = season - birth_year
+                    
+                    entry = stats_by_birth_year.setdefault(age, {
+                        'total': 0,
+                        'pregnant': 0,
+                    })
+                    entry['total'] += 1
+                    if pc.is_pregnant:
+                        entry['pregnant'] += 1
+            
+            # Convert to pregnancy rates
+            for age, counts in stats_by_birth_year.items():
+                preg_rate = (counts['pregnant'] / counts['total'] * 100) if counts['total'] > 0 else 0
+                pregnancy_rates_by_season_and_age[season][age] = preg_rate
+        
+        # Determine the range of ages to display
+        all_ages = set()
+        for season_rates in pregnancy_rates_by_season_and_age.values():
+            all_ages.update(season_rates.keys())
+        
+        if not all_ages:
+            return render(request, 'preg_check/rolling-average-report.html', {
+                'seasons': seasons_list,
+                'rows': [],
+            })
+        
+        all_ages = sorted(list(all_ages))
+        
+        # Build the rows
+        rows = []
+        for age in all_ages:
+            row = {
+                'age': age,
+                'season_rates': [],
+                'year_rates': []
+            }
+            
+            for season in seasons_list:
+                rate = pregnancy_rates_by_season_and_age[season].get(age, None)
+                if rate is not None:
+                    row['season_rates'].append(f"{rate:.1f}%")
+                    row['year_rates'].append(rate)
+                else:
+                    row['season_rates'].append("—")
+            
+            # Calculate rolling 4-year average (average of available years)
+            if row['year_rates']:
+                rolling_avg = sum(row['year_rates']) / len(row['year_rates'])
+                row['rolling_avg'] = f"{rolling_avg:.1f}%"
+            else:
+                row['rolling_avg'] = "—"
+            
+            rows.append(row)
+        
+        context = {
+            'seasons': seasons_list,
+            'rows': rows,
+        }
+        return render(request, 'preg_check/rolling-average-report.html', context)
+
+
 class PregCheckEditView(View):
     def post(self, request, pregcheck_id):
         try:

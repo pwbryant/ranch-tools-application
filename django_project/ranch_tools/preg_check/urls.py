@@ -9,6 +9,7 @@ from ranch_tools.preg_check.views import (
     PregCheckListView,
     PregCheckListBySeasonView,
     PregCheckRecordNewAnimalView,
+    PregCheckRollingAverageReport,
     PregCheckSummaryStatsView,
     PreviousPregCheckListView,
     PregCheckReportFive,
@@ -29,6 +30,7 @@ urlpatterns = [
     path('pregchecks/<int:pregcheck_id>/edit/', PregCheckEditView.as_view(), name='pregcheck-edit'),
     path('pregchecks/<int:pregcheck_id>/', PregCheckDetailView.as_view(), name='pregcheck-detail'),
     path('pregchecks/report-5/', PregCheckReportFive.as_view(), name='pregcheck-report-5'),
+    path('pregchecks/rolling-average-report/', PregCheckRollingAverageReport.as_view(), name='pregcheck-rolling-average-report'),
     path('cow/exists/', CowExistsView.as_view(), name='cow-exists'),
 ]
 

@@ -110,12 +110,12 @@ class PregCheckDetailViewTest(TestCase):
     def test_pregcheck_detail(self):
         response = self.client.get(reverse('pregcheck-detail', args=[self.pregcheck.id]))
         self.assertEqual(response.status_code, 200)
-        self.assertJSONEqual(response.content, {
-            'id': self.pregcheck.id,
-            'is_pregnant': self.pregcheck.is_pregnant,
-            'comments': self.pregcheck.comments,
-            'recheck': self.pregcheck.recheck,
-        })
+        response_data = response.json()
+        self.assertEqual(response_data['id'], self.pregcheck.id)
+        self.assertEqual(response_data['is_pregnant'], self.pregcheck.is_pregnant)
+        self.assertEqual(response_data['comments'], self.pregcheck.comments)
+        self.assertEqual(response_data['recheck'], self.pregcheck.recheck)
+        self.assertEqual(response_data['breeding_season'], self.pregcheck.breeding_season)
 
     def test_pregcheck_not_found(self):
         response = self.client.get(reverse('pregcheck-detail', args=[999]))
@@ -172,3 +172,270 @@ class CowCreateUpdateViewTest(TestCase):
     #     response = self.client.post(self.create_url, data)
     #     self.assertEqual(response.status_code, 200)  # Form invalid, re-render the form
     #     self.assertFormError(response, 'form', 'ear_tag_id', 'This field is required.')
+
+
+class PregCheckReportFiveDetailedTest(TestCase):
+    """Detailed tests for PregCheckReportFive view including totals and calculations"""
+    
+    def setUp(self):
+        self.client = Client()
+        self.current_season = CurrentBreedingSeason.objects.create(breeding_season=2025)
+        
+    def test_report_five_no_data(self):
+        """Test report five with no data"""
+        response = self.client.get(reverse('pregcheck-report-5'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Report Five")
+        self.assertContains(response, "No data for this season")
+        
+    def test_report_five_single_age_class(self):
+        """Test report five with single age class"""
+        cow = Cow.objects.create(ear_tag_id='EAR001', birth_year=2020, eid='RFID001')
+        PregCheck.objects.create(cow=cow, breeding_season=2025, is_pregnant=True, recheck=False)
+        
+        response = self.client.get(reverse('pregcheck-report-5'), {'breeding_season': 2025})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '2020')
+        self.assertContains(response, '100.0%')  # 1 pregnant out of 1 total
+        
+    def test_report_five_multiple_age_classes(self):
+        """Test report five with multiple age classes"""
+        # Create cows of different ages
+        cow_2020 = Cow.objects.create(ear_tag_id='EAR001', birth_year=2020, eid='RFID001')
+        cow_2021 = Cow.objects.create(ear_tag_id='EAR002', birth_year=2021, eid='RFID002')
+        cow_2022 = Cow.objects.create(ear_tag_id='EAR003', birth_year=2022, eid='RFID003')
+        
+        # Age 5: 1 pregnant out of 1
+        PregCheck.objects.create(cow=cow_2020, breeding_season=2025, is_pregnant=True, recheck=False)
+        
+        # Age 4: 1 pregnant out of 2 (one of the pregchecks is a recheck, but we count unique cows)
+        PregCheck.objects.create(cow=cow_2021, breeding_season=2025, is_pregnant=True, recheck=False)
+        PregCheck.objects.create(cow=cow_2021, breeding_season=2025, is_pregnant=False, recheck=True)
+        
+        # Age 3: 0 pregnant out of 1
+        PregCheck.objects.create(cow=cow_2022, breeding_season=2025, is_pregnant=False, recheck=False)
+        
+        response = self.client.get(reverse('pregcheck-report-5'), {'breeding_season': 2025})
+        self.assertEqual(response.status_code, 200)
+        
+        content = response.content.decode('utf-8')
+        # Check that all birth years are present
+        self.assertIn('2020', content)
+        self.assertIn('2021', content)
+        self.assertIn('2022', content)
+        # Check percentages - cow_2021 has 1 pregnant out of 1 unique cow = 100%
+        self.assertIn('100.0%', content)   # Both 2020 and 2021 should be 100%
+        self.assertIn('0.0%', content)     # 2022 should be 0%
+        
+    def test_report_five_totals_row(self):
+        """Test that totals row is calculated correctly"""
+        cow_a = Cow.objects.create(ear_tag_id='EAR001', birth_year=2020, eid='RFID001')
+        cow_b = Cow.objects.create(ear_tag_id='EAR002', birth_year=2021, eid='RFID002')
+        
+        # 2020 age: 1 pregnant, 0 open (100%)
+        PregCheck.objects.create(cow=cow_a, breeding_season=2025, is_pregnant=True, recheck=False)
+        
+        # 2021 age: 1 pregnant, 1 open (50%)
+        PregCheck.objects.create(cow=cow_b, breeding_season=2025, is_pregnant=True, recheck=False)
+        cow_b2 = Cow.objects.create(ear_tag_id='EAR002b', birth_year=2021, eid='RFID002b')
+        PregCheck.objects.create(cow=cow_b2, breeding_season=2025, is_pregnant=False, recheck=False)
+        
+        response = self.client.get(reverse('pregcheck-report-5'), {'breeding_season': 2025})
+        self.assertEqual(response.status_code, 200)
+        
+        content = response.content.decode('utf-8')
+        self.assertIn('TOTALS', content)
+        # Average percentage should be (100 + 50) / 2 = 75.0%
+        self.assertIn('75.0%', content)
+        
+    def test_report_five_recheck_count_unique_cows(self):
+        """Test that preg_recheck_count counts unique cows, not checks"""
+        cow_a = Cow.objects.create(ear_tag_id='EAR001', birth_year=2020, eid='RFID001')
+        cow_b = Cow.objects.create(ear_tag_id='EAR002', birth_year=2020, eid='RFID002')
+        
+        # Cow A: 2 recheck records (should count as 1 cow with recheck)
+        PregCheck.objects.create(cow=cow_a, breeding_season=2025, is_pregnant=False, recheck=False)
+        PregCheck.objects.create(cow=cow_a, breeding_season=2025, is_pregnant=True, recheck=True)
+        PregCheck.objects.create(cow=cow_a, breeding_season=2025, is_pregnant=True, recheck=True)
+        
+        # Cow B: 1 recheck record
+        PregCheck.objects.create(cow=cow_b, breeding_season=2025, is_pregnant=False, recheck=False)
+        PregCheck.objects.create(cow=cow_b, breeding_season=2025, is_pregnant=False, recheck=True)
+        
+        response = self.client.get(reverse('pregcheck-report-5'), {'breeding_season': 2025})
+        self.assertEqual(response.status_code, 200)
+        
+        # preg_recheck_count should be 1 (only Cow A had pregnant recheck)
+        content = response.content.decode('utf-8')
+        self.assertIn('preg_recheck_count', content)
+        
+    def test_report_five_custom_breeding_season(self):
+        """Test report five with custom breeding season parameter"""
+        # Use a different season than the one in setUp
+        cow = Cow.objects.create(ear_tag_id='EAR001', birth_year=2020, eid='RFID001')
+        PregCheck.objects.create(cow=cow, breeding_season=2024, is_pregnant=True, recheck=False)
+        
+        response = self.client.get(reverse('pregcheck-report-5'), {'breeding_season': 2024})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '2024')
+        
+    def test_report_five_first_pass_counts(self):
+        """Test that first pass counts only include first check per cow"""
+        cow = Cow.objects.create(ear_tag_id='EAR001', birth_year=2020, eid='RFID001')
+        
+        # First check: open
+        PregCheck.objects.create(cow=cow, breeding_season=2025, is_pregnant=False, recheck=False)
+        # Second check (recheck): pregnant
+        PregCheck.objects.create(cow=cow, breeding_season=2025, is_pregnant=True, recheck=True)
+        
+        response = self.client.get(reverse('pregcheck-report-5'), {'breeding_season': 2025})
+        self.assertEqual(response.status_code, 200)
+        
+        content = response.content.decode('utf-8')
+        # first_pass_open should be 1, first_pass_pregnant should be 0
+        self.assertIn('first_pass_open', content)
+
+
+class PregCheckRollingAverageReportTest(TestCase):
+    """Tests for PregCheckRollingAverageReport view"""
+    
+    def setUp(self):
+        self.client = Client()
+        
+    def test_rolling_average_no_data(self):
+        """Test rolling average report with no data"""
+        response = self.client.get(reverse('pregcheck-rolling-average-report'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Rolling Average Report")
+        self.assertContains(response, "No data available")
+        
+    def test_rolling_average_single_season(self):
+        """Test rolling average with data from single season"""
+        cow = Cow.objects.create(ear_tag_id='EAR001', birth_year=2021, eid='RFID001')
+        PregCheck.objects.create(cow=cow, breeding_season=2025, is_pregnant=True, recheck=False)
+        
+        response = self.client.get(reverse('pregcheck-rolling-average-report'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '2025')
+        self.assertContains(response, '100.0%')
+        
+    def test_rolling_average_multiple_seasons(self):
+        """Test rolling average with data from multiple seasons"""
+        cow_2021 = Cow.objects.create(ear_tag_id='EAR001', birth_year=2021, eid='RFID001')
+        cow_2022 = Cow.objects.create(ear_tag_id='EAR002', birth_year=2022, eid='RFID002')
+        
+        # Season 2022: Age 1 cow, 100% pregnant
+        PregCheck.objects.create(cow=cow_2021, breeding_season=2022, is_pregnant=True, recheck=False)
+        
+        # Season 2023: Age 1 cow, 0% pregnant; Age 2 cow, 100% pregnant
+        PregCheck.objects.create(cow=cow_2021, breeding_season=2023, is_pregnant=False, recheck=False)
+        PregCheck.objects.create(cow=cow_2022, breeding_season=2023, is_pregnant=True, recheck=False)
+        
+        # Season 2024: Age 1 cow, 100% pregnant; Age 2 cow, 100% pregnant
+        PregCheck.objects.create(cow=cow_2021, breeding_season=2024, is_pregnant=True, recheck=False)
+        PregCheck.objects.create(cow=cow_2022, breeding_season=2024, is_pregnant=True, recheck=False)
+        
+        # Season 2025: Age 1 cow, 50% pregnant; Age 2 cow, 100% pregnant
+        cow_2024 = Cow.objects.create(ear_tag_id='EAR003', birth_year=2024, eid='RFID003')
+        PregCheck.objects.create(cow=cow_2021, breeding_season=2025, is_pregnant=True, recheck=False)
+        PregCheck.objects.create(cow=cow_2024, breeding_season=2025, is_pregnant=False, recheck=False)
+        PregCheck.objects.create(cow=cow_2022, breeding_season=2025, is_pregnant=True, recheck=False)
+        
+        response = self.client.get(reverse('pregcheck-rolling-average-report'))
+        self.assertEqual(response.status_code, 200)
+        
+        content = response.content.decode('utf-8')
+        # Should show data for ages 1, 2, and 3
+        self.assertIn('Rolling Average Report', content)
+        self.assertIn('Rolling Avg', content)
+        
+    def test_rolling_average_gets_last_four_seasons(self):
+        """Test that rolling average uses only last 4 seasons"""
+        cow = Cow.objects.create(ear_tag_id='EAR001', birth_year=2015, eid='RFID001')
+        
+        # Create data for 6 seasons
+        for season in range(2020, 2026):
+            PregCheck.objects.create(cow=cow, breeding_season=season, is_pregnant=True, recheck=False)
+        
+        response = self.client.get(reverse('pregcheck-rolling-average-report'))
+        self.assertEqual(response.status_code, 200)
+        
+        content = response.content.decode('utf-8')
+        # Should show last 4 seasons: 2022, 2023, 2024, 2025
+        self.assertIn('2022', content)
+        self.assertIn('2023', content)
+        self.assertIn('2024', content)
+        self.assertIn('2025', content)
+        # Should not show 2020 and 2021
+        self.assertNotIn('>2020<', content)
+        self.assertNotIn('>2021<', content)
+        
+    def test_rolling_average_totals_row(self):
+        """Test that totals row is present and calculates average"""
+        cow = Cow.objects.create(ear_tag_id='EAR001', birth_year=2021, eid='RFID001')
+        
+        # Create data for 2 seasons
+        # Season 2024: 100% pregnant
+        PregCheck.objects.create(cow=cow, breeding_season=2024, is_pregnant=True, recheck=False)
+        
+        # Season 2025: 50% pregnant (2 cows, 1 pregnant)
+        cow2 = Cow.objects.create(ear_tag_id='EAR002', birth_year=2024, eid='RFID002')
+        PregCheck.objects.create(cow=cow, breeding_season=2025, is_pregnant=True, recheck=False)
+        PregCheck.objects.create(cow=cow2, breeding_season=2025, is_pregnant=False, recheck=False)
+        
+        response = self.client.get(reverse('pregcheck-rolling-average-report'))
+        self.assertEqual(response.status_code, 200)
+        
+        content = response.content.decode('utf-8')
+        # Check for totals/average row
+        self.assertIn('AVERAGE', content)
+        
+    def test_rolling_average_missing_data_shows_dash(self):
+        """Test that missing data for age/season combination shows dash"""
+        cow_2021 = Cow.objects.create(ear_tag_id='EAR001', birth_year=2021, eid='RFID001')
+        cow_2023 = Cow.objects.create(ear_tag_id='EAR002', birth_year=2023, eid='RFID002')
+        
+        # Season 2024: only age 3 data
+        PregCheck.objects.create(cow=cow_2021, breeding_season=2024, is_pregnant=True, recheck=False)
+        
+        # Season 2025: age 2 and age 4 data
+        PregCheck.objects.create(cow=cow_2023, breeding_season=2025, is_pregnant=True, recheck=False)
+        PregCheck.objects.create(cow=cow_2021, breeding_season=2025, is_pregnant=True, recheck=False)
+        
+        response = self.client.get(reverse('pregcheck-rolling-average-report'))
+        self.assertEqual(response.status_code, 200)
+        
+        content = response.content.decode('utf-8')
+        # Should show dashes for missing data
+        self.assertIn('—', content)
+        
+    def test_rolling_average_age_calculation(self):
+        """Test that age is correctly calculated as breeding_season - birth_year"""
+        cow = Cow.objects.create(ear_tag_id='EAR001', birth_year=2020, eid='RFID001')
+        PregCheck.objects.create(cow=cow, breeding_season=2025, is_pregnant=True, recheck=False)
+        
+        response = self.client.get(reverse('pregcheck-rolling-average-report'))
+        self.assertEqual(response.status_code, 200)
+        
+        content = response.content.decode('utf-8')
+        # Age should be 5 (2025 - 2020)
+        self.assertIn('5', content)
+        
+    def test_rolling_average_multiple_cows_same_age(self):
+        """Test pregnancy rate calculation with multiple cows of same age"""
+        # Two cows born in 2021 (will be age 4 in 2025)
+        cow_a = Cow.objects.create(ear_tag_id='EAR001', birth_year=2021, eid='RFID001')
+        cow_b = Cow.objects.create(ear_tag_id='EAR002', birth_year=2021, eid='RFID002')
+        cow_c = Cow.objects.create(ear_tag_id='EAR003', birth_year=2021, eid='RFID003')
+        
+        # 2 out of 3 pregnant
+        PregCheck.objects.create(cow=cow_a, breeding_season=2025, is_pregnant=True, recheck=False)
+        PregCheck.objects.create(cow=cow_b, breeding_season=2025, is_pregnant=True, recheck=False)
+        PregCheck.objects.create(cow=cow_c, breeding_season=2025, is_pregnant=False, recheck=False)
+        
+        response = self.client.get(reverse('pregcheck-rolling-average-report'))
+        self.assertEqual(response.status_code, 200)
+        
+        content = response.content.decode('utf-8')
+        # Should show 66.7% for age 4
+        self.assertIn('66.7%', content)

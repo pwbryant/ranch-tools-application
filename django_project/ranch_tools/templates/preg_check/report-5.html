@@ -3,6 +3,16 @@
 <head>
     <meta charset="utf-8">
     <title>Report Five</title>
+    <style>
+        .green-bg {
+            background-color: #90EE90;
+            font-weight: bold;
+        }
+        .yellow-bg {
+            background-color: #FFFF99;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
     <div class="nav-container">
@@ -42,7 +52,15 @@
                 <td>{{ row.preg_recheck_count }}</td>
                 <td>{{ row.net_open }}</td>
                 <td>{{ row.net_pregnant }}</td>
-                <td>{{ row.pct_pregnant }}</td>
+                <td 
+                    {% with pct_value=row.pct_pregnant|slice:":-1"|floatformat:0 %}
+                        {% if pct_value|add:"0" >= 90 %}
+                            class="green-bg"
+                        {% elif pct_value|add:"0" < 70 %}
+                            class="yellow-bg"
+                        {% endif %}
+                    {% endwith %}
+                >{{ row.pct_pregnant }}</td>
             </tr>
             {% empty %}
             <tr><td colspan="9">No data for this season.</td></tr>
@@ -57,7 +75,15 @@
                 <td>{{ totals.preg_recheck_count }}</td>
                 <td>{{ totals.net_open }}</td>
                 <td>{{ totals.net_pregnant }}</td>
-                <td>{{ totals.pct_pregnant }}</td>
+                <td 
+                    {% with pct_value=totals.pct_pregnant|slice:":-1"|floatformat:0 %}
+                        {% if pct_value|add:"0" >= 90 %}
+                            class="green-bg"
+                        {% elif pct_value|add:"0" < 70 %}
+                            class="yellow-bg"
+                        {% endif %}
+                    {% endwith %}
+                >{{ totals.pct_pregnant }}</td>
             </tr>
             {% endif %}
         </tbody>

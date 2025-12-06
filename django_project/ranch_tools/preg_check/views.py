@@ -650,9 +650,52 @@ class PregCheckRollingAverageReport(View):
             
             rows.append(row)
         
+        # Calculate totals row - average of each season and overall rolling average
+        if rows:
+            # For each season, calculate the average pregnancy rate across all ages
+            season_averages = []
+            for season_idx, season in enumerate(seasons_list):
+                season_rates = []
+                for row in rows:
+                    if season_idx < len(row['year_rates']):
+                        # Get the rate for this season from the year_rates list
+                        rate_value = row['year_rates'][season_idx] if season_idx < len(row['year_rates']) else None
+                        if rate_value is not None:
+                            season_rates.append(rate_value)
+                
+                if season_rates:
+                    avg = sum(season_rates) / len(season_rates)
+                    season_averages.append(f"{avg:.1f}%")
+                else:
+                    season_averages.append("—")
+            
+            # Calculate overall rolling average
+            all_rolling_avg_values = []
+            for row in rows:
+                if row['rolling_avg'] != "—":
+                    # Extract numeric value from percentage string
+                    avg_str = row['rolling_avg'].replace('%', '')
+                    all_rolling_avg_values.append(float(avg_str))
+            
+            if all_rolling_avg_values:
+                overall_rolling_avg = sum(all_rolling_avg_values) / len(all_rolling_avg_values)
+                overall_rolling_avg_str = f"{overall_rolling_avg:.1f}%"
+            else:
+                overall_rolling_avg_str = "—"
+            
+            totals_row = {
+                'age': 'AVERAGE',
+                'season_rates': season_averages,
+                'year_rates': [float(s.replace('%', '')) if s != "—" else None for s in season_averages],
+                'rolling_avg': overall_rolling_avg_str,
+            }
+        else:
+            totals_row = None
+        
         context = {
             'seasons': seasons_list,
             'rows': rows,
+            'totals': totals_row,
         }
         return render(request, 'preg_check/rolling-average-report.html', context)
 

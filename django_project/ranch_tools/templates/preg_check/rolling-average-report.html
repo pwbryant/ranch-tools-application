@@ -97,11 +97,61 @@
             <tr>
                 <td class="age-cell">{{ row.age }}</td>
                 {% for rate in row.season_rates %}
-                    <td>{{ rate }}</td>
+                    <td 
+                        {% if rate != "—" %}
+                            {% with pct_value=rate|slice:":-1"|floatformat:0 %}
+                                {% if pct_value|add:"0" >= 90 %}
+                                    style="background-color: #90EE90; font-weight: bold;"
+                                {% elif pct_value|add:"0" < 70 %}
+                                    style="background-color: #FFFF99; font-weight: bold;"
+                                {% endif %}
+                            {% endwith %}
+                        {% endif %}
+                    >{{ rate }}</td>
                 {% endfor %}
-                <td class="rolling-avg-cell">{{ row.rolling_avg }}</td>
+                <td 
+                    class="rolling-avg-cell"
+                    {% if row.rolling_avg != "—" %}
+                        {% with pct_value=row.rolling_avg|slice:":-1"|floatformat:0 %}
+                            {% if pct_value|add:"0" >= 90 %}
+                                style="background-color: #90EE90; font-weight: bold;"
+                            {% elif pct_value|add:"0" < 70 %}
+                                style="background-color: #FFFF99; font-weight: bold;"
+                            {% endif %}
+                        {% endwith %}
+                    {% endif %}
+                >{{ row.rolling_avg }}</td>
             </tr>
             {% endfor %}
+            {% if totals %}
+            <tr style="background-color: #e0e0e0; font-weight: bold; border-top: 2px solid #333;">
+                <td class="age-cell">{{ totals.age }}</td>
+                {% for rate in totals.season_rates %}
+                    <td 
+                        {% if rate != "—" %}
+                            {% with pct_value=rate|slice:":-1"|floatformat:0 %}
+                                {% if pct_value|add:"0" >= 90 %}
+                                    style="background-color: #90EE90;"
+                                {% elif pct_value|add:"0" < 70 %}
+                                    style="background-color: #FFFF99;"
+                                {% endif %}
+                            {% endwith %}
+                        {% endif %}
+                    >{{ rate }}</td>
+                {% endfor %}
+                <td 
+                    {% if totals.rolling_avg != "—" %}
+                        {% with pct_value=totals.rolling_avg|slice:":-1"|floatformat:0 %}
+                            {% if pct_value|add:"0" >= 90 %}
+                                style="background-color: #90EE90;"
+                            {% elif pct_value|add:"0" < 70 %}
+                                style="background-color: #FFFF99;"
+                            {% endif %}
+                        {% endwith %}
+                    {% endif %}
+                >{{ totals.rolling_avg }}</td>
+            </tr>
+            {% endif %}
         </tbody>
     </table>
     {% else %}

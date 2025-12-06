@@ -507,9 +507,42 @@ class PregCheckReportFive(View):
                 'pct_pregnant': f"{pct:.1f}%",
             })
 
+        # Calculate totals row
+        if rows:
+            total_first_pass_open = sum(int(r['first_pass_open']) for r in rows)
+            total_first_pass_pregnant = sum(int(r['first_pass_pregnant']) for r in rows)
+            total_first_pass_total = sum(int(r['first_pass_total']) for r in rows)
+            total_preg_recheck_count = sum(int(r['preg_recheck_count']) for r in rows)
+            total_net_open = sum(int(r['net_open']) for r in rows)
+            total_net_pregnant = sum(int(r['net_pregnant']) for r in rows)
+            
+            # Calculate average pct_pregnant
+            pct_values = []
+            for r in rows:
+                # Extract numeric value from percentage string
+                pct_str = r['pct_pregnant'].replace('%', '')
+                pct_values.append(float(pct_str))
+            avg_pct = sum(pct_values) / len(pct_values) if pct_values else 0
+            
+            totals_row = {
+                'cow_birth_year': 'TOTALS',
+                'age': None,
+                'first_pass_open': total_first_pass_open,
+                'first_pass_pregnant': total_first_pass_pregnant,
+                'first_pass_total': total_first_pass_total,
+                'preg_recheck_count': total_preg_recheck_count,
+                'net_open': total_net_open,
+                'net_pregnant': total_net_pregnant,
+                'pct_pregnant': f"{avg_pct:.1f}%",
+                'is_totals': True,
+            }
+        else:
+            totals_row = None
+
         context = {
             'breeding_season': breeding_season,
             'rows': rows,
+            'totals': totals_row,
         }
         return render(request, 'preg_check/report-5.html', context)
 

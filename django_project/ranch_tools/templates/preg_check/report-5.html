@@ -47,6 +47,19 @@
             {% empty %}
             <tr><td colspan="9">No data for this season.</td></tr>
             {% endfor %}
+            {% if totals %}
+            <tr style="background-color: #e0e0e0; font-weight: bold;">
+                <td>{{ totals.cow_birth_year }}</td>
+                <td>{{ totals.age }}</td>
+                <td>{{ totals.first_pass_open }}</td>
+                <td>{{ totals.first_pass_pregnant }}</td>
+                <td>{{ totals.first_pass_total }}</td>
+                <td>{{ totals.preg_recheck_count }}</td>
+                <td>{{ totals.net_open }}</td>
+                <td>{{ totals.net_pregnant }}</td>
+                <td>{{ totals.pct_pregnant }}</td>
+            </tr>
+            {% endif %}
         </tbody>
     </table>
 </body>

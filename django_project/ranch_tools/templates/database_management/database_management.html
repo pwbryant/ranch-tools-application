@@ -227,30 +227,24 @@
                 {% endif %}
             </div>
 
-            <!-- Update Database with Excel/CSV -->
+            <!-- Backup Current Database -->
             <div class="card">
-                <h3>Update Database with Excel/CSV</h3>
-                <div class="warning">
-                    <strong>Info:</strong> Use this form to add new records to your current database by uploading an Excel or CSV file.<br>
-                    The file should contain columns matching the database fields (e.g., ear_tag_id, birth_year, eid, breeding_season, check_date, comments, is_pregnant, recheck).
-                </div>
-                <form method="post" enctype="multipart/form-data" id="updateForm">
+                <h3>Backup Current Database</h3>
+                <p>Create a backup copy of your current database for safekeeping.</p>
+                
+                <form method="post" id="backupForm">
                     {% csrf_token %}
-                    <div class="upload-area" onclick="document.getElementById('update_db').click()">
-                        <div style="font-size: 48px; margin-bottom: 15px; color: #667eea;">📄</div>
-                        <p>Click here to select an Excel or CSV file to add records</p>
-                        <p style="color: #6c757d; font-size: 14px;">Supported formats: .xlsx, .xls, .csv</p>
-                        <div id="updateFileName"></div>
-                    </div>
-                    <input type="file" id="update_db" name="update_db" accept=".xlsx,.xls,.csv" class="file-input">
-                    <div style="text-align: center; margin-top: 20px;">
-                        <button type="submit" class="upload-btn" id="updateBtn" disabled>
-                            Add Records
+                    <input type="hidden" name="create_backup" value="1">
+                    <input type="hidden" name="backup_path" id="backupPath" value="">
+                    
+                    <div style="text-align: center;">
+                        <button type="button" id="backupBtn" class="upload-btn btn-secondary">
+                            Create Backup
                         </button>
                     </div>
                 </form>
             </div>
-            
+
             <!-- Upload New Database -->
             <div class="card">
                 <h3>Upload New Database</h3>
@@ -288,19 +282,28 @@
                 </div>
             </div>
 
-            <!-- Backup Current Database -->
+            <!-- Update Database with Excel/CSV -->
             <div class="card">
-                <h3>Backup Current Database</h3>
-                <p>Create a backup copy of your current database for safekeeping.</p>
-                
-                <form method="post" id="backupForm">
+                <h3>Update Database with Excel/CSV</h3>
+                <div class="warning">
+                    <strong>Info:</strong> Use this form to add new records to your current database by uploading an Excel or CSV file.<br>
+                    The file should contain columns matching the database fields (e.g., ear_tag_id, birth_year, eid, breeding_season, check_date, comments, is_pregnant, recheck).
+                </div>
+                <form method="post" enctype="multipart/form-data" id="updateForm">
                     {% csrf_token %}
+                    <!-- Add hidden fields so the backend can receive backup instructions -->
                     <input type="hidden" name="create_backup" value="1">
-                    <input type="hidden" name="backup_path" id="backupPath" value="">
-                    
-                    <div style="text-align: center;">
-                        <button type="button" id="backupBtn" class="upload-btn btn-secondary">
-                            Create Backup
+                    <input type="hidden" id="updateBackupPath" name="backup_path" value="">
+                    <div class="upload-area" onclick="document.getElementById('update_db').click()">
+                        <div style="font-size: 48px; margin-bottom: 15px; color: #667eea;">📄</div>
+                        <p>Click here to select an Excel or CSV file to add records</p>
+                        <p style="color: #6c757d; font-size: 14px;">Supported formats: .xlsx, .xls, .csv</p>
+                        <div id="updateFileName"></div>
+                    </div>
+                    <input type="file" id="update_db" name="update_db" accept=".xlsx,.xls,.csv" class="file-input">
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button type="submit" class="upload-btn" id="updateBtn" disabled>
+                            Add Records
                         </button>
                     </div>
                 </form>
@@ -342,14 +345,72 @@
             }
         });
 
-        // Handle update form submission with confirmation
-        document.getElementById('updateForm').addEventListener('submit', function(e) {
-            if (!confirm('Are you sure you want to add records to the current database from this file?')) {
-                e.preventDefault();
+        // Handle update form submission: create a backup (allow user to choose path) then submit
+        document.getElementById('updateForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const form = this;
+            const updateBtn = document.getElementById('updateBtn');
+            const backupPathInput = document.getElementById('updateBackupPath');
+
+            if (!confirm('A backup of the current database will be created before importing. Continue?')) {
+                return;
             }
+
+            // UI feedback
+            const originalBtnText = updateBtn.textContent;
+            updateBtn.textContent = 'Preparing backup...';
+            updateBtn.disabled = true;
+
+            // Try Electron save dialog if available
+            if (window.require) {
+                try {
+                    const { ipcRenderer } = window.require('electron');
+                    const defaultName = `ranch_tools_backup_${new Date().toISOString().slice(0,10)}.sqlite3`;
+                    const result = await ipcRenderer.invoke('show-save-dialog', {
+                        title: 'Save Database Backup',
+                        defaultPath: defaultName,
+                        filters: [
+                            { name: 'SQLite Database', extensions: ['sqlite3', 'db'] },
+                            { name: 'All Files', extensions: ['*'] }
+                        ]
+                    });
+
+                    if (result && !result.canceled && result.filePath) {
+                        backupPathInput.value = result.filePath;
+                        updateBtn.textContent = 'Creating Backup...';
+                        form.submit();
+                        return;
+                    } else {
+                        // User cancelled save dialog
+                        updateBtn.textContent = originalBtnText;
+                        updateBtn.disabled = false;
+                        return;
+                    }
+                } catch (err) {
+                    console.error('Electron save dialog failed:', err);
+                    alert('Unable to open save dialog. Please try again.');
+                    updateBtn.textContent = originalBtnText;
+                    updateBtn.disabled = false;
+                    return;
+                }
+            }
+
+            // Fallback for non-Electron (browser): prompt for a backup filename/path
+            const defaultName = `ranch_tools_backup_${new Date().toISOString().slice(0,10)}.sqlite3`;
+            const userPath = prompt('Enter a filename for the backup (the file will be created server-side):', defaultName);
+            if (userPath === null) {
+                // user cancelled
+                updateBtn.textContent = originalBtnText;
+                updateBtn.disabled = false;
+                return;
+            }
+            // Set the provided path/name and submit
+            backupPathInput.value = userPath.trim() || defaultName;
+            updateBtn.textContent = 'Creating Backup...';
+            form.submit();
         });
         
-        // Handle form submission with confirmation
+        // Handle form submission with confirmation (uploadForm)
         document.getElementById('uploadForm').addEventListener('submit', function(e) {
             if (!confirm('Are you sure you want to replace the current database? This action cannot be undone (although a backup will be created).')) {
                 e.preventDefault();

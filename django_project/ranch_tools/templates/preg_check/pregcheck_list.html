@@ -3,10 +3,19 @@
 <link rel="stylesheet" type="text/css" href="{% static 'preg_check/css/styles.css' %}">
 
 
-<div class="container">
-    <div class="nav-button-container">
-        <a href="/database-management" class="nav-button">← Go to Database Management</a>
+<div class="header">
+
+<div class="nav-container">
+    <select id="nav-select" class="nav-select" aria-label="Navigate to">
+        <option value="">Navigate…</option>
+        <option value="{% url 'database_management' %}">Go to Database Management</option>
+        <option value="{% url 'pregcheck-reports' %}">Go to Reports</option>
+        <option value="/admin">Go to PregCheck Admin</option>
+    </select>
     </div>
+</div>
+
+<div class="container">
     <div class="breeding-season-container">
         <h2>Current Breeding Season:</h2>
         <input type="text" id="breeding-season-input" placeholder="YYYY" maxlength="4" pattern="\d{4}" title="Enter a 4-digit year" value="{{ current_breeding_season }}">
@@ -32,6 +41,19 @@
     const animalExists = "{{ animal_exists }}" === "True";
     const pregchecksUrl = "{% url 'pregcheck-list' %}";
     const latestBreedingSeason = {{ latest_breeding_season }};
+
+    // Navigate to the chosen URL when user selects an option.
+    // Keeps behavior simple and works without extra libraries.
+    document.addEventListener('DOMContentLoaded', function () {
+    const select = document.getElementById('nav-select');
+    if (!select) return;
+    select.addEventListener('change', function () {
+      const url = this.value;
+      if (url) {
+        window.location.href = url;
+      }
+    });
+  });
 </script>
 
 <script type="text/javascript" src="{% static 'preg_check/js/script.js' %}"></script>

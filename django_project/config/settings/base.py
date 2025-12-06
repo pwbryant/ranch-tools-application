@@ -46,7 +46,7 @@ INSTALLED_APPS = [
 #    'django_extensions',
 
     # local apps
-    'users',
+    'ranch_tools.users',
     'ranch_tools.preg_check',
     'ranch_tools.database_management',
 ]

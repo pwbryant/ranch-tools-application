@@ -1,0 +1,14 @@
+{% extends "admin/base_site.html" %}
+
+{% block branding %}
+<div stype="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #417690;">
+    <h1 id="site-name" style="margin-bottom: 5px; font-size: 1.5em;">
+        <a href="{% url 'admin:index' %}" style="color: white; text-decoration: none;">
+            PregCheck Admin
+        </a>
+    </h1>
+    <a href="/pregchecks/" style="color: white; text-decoration: none; margin-top: 5px; padding: 5px 15px; background: rgba(255, 255, 255, 0.2); boarder-radius: 4px;">
+        Back to PregCheck
+    </a>
+</div>
+{% endblock branding %}

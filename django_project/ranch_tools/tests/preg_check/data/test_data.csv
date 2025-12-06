@@ -1,0 +1,10 @@
+breeding_season,cow_ear_tag,birth_year,is_pregnant,recheck,comments
+2025,A1,2020,False,False,first pass open for cow A
+2025,A1,2020,True,True,second pass pregnant for cow A (recheck)
+2025,B1,2020,False,False,first pass open for cow B
+2025,, ,True,False,unassociated pregcheck (no cow)
+2025,C1,2019,True,False,first pass pregnant for cow C
+2024,D1,2020,False,False,previous season cow D open
+2024,D1,2020,True,True,previous season recheck pregnant for cow D
+2024,, ,False,False,previous season unassociated open
+2024,E1,2018,True,False,previous season pregnant cow

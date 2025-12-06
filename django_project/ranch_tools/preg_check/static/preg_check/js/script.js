@@ -258,18 +258,28 @@ document.addEventListener('DOMContentLoaded', function() {
         
         
         // Validate ear tag ID and "No ID" checkbox
-        const earTagIdValue = formData.get('pregcheck_ear_tag_id');
+        const earTagIdValue = formData.get('pregcheck_ear_tag_id').trim();
+        const rfidValue = formData.get('pregcheck_rfid').trim();
         const noIdChecked = formData.get('no_id') === 'on' || formData.get('no_id') === true;
-        if ((!earTagIdValue || !earTagIdValue.trim()) && !noIdChecked) {
-            messageContainer.textContent = 'If Ear Tag ID is blank, you must check "No ID".';
+        if (!earTagIdValue && !rfidValue && !noIdChecked) {
+            messageContainer.textContent = 'If Ear Tag ID and RFID is blank, you must check "No ID".';
             messageContainer.classList.add('error');
             modal.style.display = 'block';
             return;
-        } else if (earTagIdValue && earTagIdValue.trim() && noIdChecked) {
-            messageContainer.textContent = 'If Ear Tag ID is provided, "No ID" should not be checked.';
+        } else if ((earTagIdValue || rfidValue) && noIdChecked) {
+            messageContainer.textContent = 'If Ear Tag ID or RFID is provided, "No ID" should not be checked.';
             messageContainer.classList.add('error');
             modal.style.display = 'block';
             return;
+        }
+        // If "No ID" is checked and both ear tag and rfid are blank, clear birth year input
+        if (noIdChecked && !earTagIdValue && !rfidValue) {
+            const birthYearInput = document.getElementById('id_birth_year');
+            const formBirthYearValue = formData.get('birth_year');
+            if (formBirthYearValue) {
+                birthYearInput.value = '';
+                formData.set('birth_year', '');
+            }
         }
 
 		var xhr = new XMLHttpRequest();
@@ -344,7 +354,6 @@ document.addEventListener('DOMContentLoaded', function() {
         // const noAnimaRFIDlModal = document.getElementById('no-animal-rfid-modal');
 		
 		function openNoAnimalModal(earTagId, rfid) {
-            console.log('open no animal modal', earTagId, rfid);
 			noAnimalModal.style.display = 'block';
 			if (earTagId) {
                 document.getElementById('new_ear_tag_id').value = earTagId;
@@ -362,7 +371,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const earTagId = document.getElementById('id_search_ear_tag_id').value;
         const rfid = document.getElementById('id_search_rfid').value;
 
-        console.log('ear and rfid', earTagId, rfid, animalExists);
         if (!animalExists && (earTagId || rfid) && earTagId != 'all' && rfid != 'all') {
 			openNoAnimalModal(earTagId, rfid);
 		} else {
@@ -376,8 +384,12 @@ document.addEventListener('DOMContentLoaded', function() {
 	// Function to populate the edit modal with data
     function populateEditModal(pregcheckData) {
         // Populate form fields in the edit modal with data from pregcheckData
-        document.getElementById('edit-ear-tag-id').value = pregcheckData.ear_tag_id;
-        document.getElementById('edit-birth-year').value = pregcheckData.animal_birth_year;
+        if (pregcheckData.ear_tag_id) {
+            document.getElementById('edit-ear-tag-id').value = pregcheckData.ear_tag_id;
+        }
+        if (pregcheckData.animal_birth_year) {
+            document.getElementById('edit-birth-year').value = pregcheckData.animal_birth_year;
+        }
         document.getElementById('edit-check_date').value = pregcheckData.check_date;
         document.getElementById('edit-breeding-season').value = pregcheckData.breeding_season;
         document.getElementById('edit-pregcheck-id').value = pregcheckData.id;
@@ -545,7 +557,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.edit-button').forEach(button => {
         button.addEventListener('click', () => {
             const pregcheckId = button.getAttribute('data-pregcheck-id');
-            
             // Make an AJAX request to fetch data for the selected pregcheck
             fetch(`/pregchecks/${pregcheckId}/`)
                 .then(response => response.json())

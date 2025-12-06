@@ -410,8 +410,9 @@ class DatabaseManagementViewTestCase(TestCase):
 
         request.FILES['update_db'] = uploaded_file        
         # Patch pandas.read_csv to return our DataFrame
-        with patch('pandas.read_csv', return_value=df):
-            response = self.view.handle_excel_upload(request)
+        with patch.object(self.view, 'create_backup_for_import', return_value=os.path.join(self.temp_dir, 'import_backup.sqlite3')):
+            with patch('pandas.read_csv', return_value=df):
+                response = self.view.handle_excel_upload(request)
 
         self.assertEqual(response.status_code, 302)  # Should redirect
         mock_cow_get_or_create.assert_called_once()
@@ -667,6 +668,37 @@ class DatabaseManagementViewTestCase(TestCase):
         
         self.assertEqual(response.status_code, 302)  # Redirect back to page
 
+    def test_create_backup_for_import_custom_path(self):
+        """create_backup_for_import should create the backup at the user-specified path and return it"""
+        view = DatabaseManagementView()
+        factory = RequestFactory()
+
+        # Ensure the test DB exists (created in setUp as self.test_db_path)
+        with patch.object(settings, 'DATABASES', {'default': {'NAME': self.test_db_path}}):
+            # Prepare request and middleware
+            request = factory.post('/database-management/')
+            self.add_session_and_messages_middleware(request)
+
+            # Choose a custom backup path in a subdir that doesn't yet exist
+            custom_dir = os.path.join(self.temp_dir, 'backups')
+            custom_backup_path = os.path.join(custom_dir, 'custom_backup.sqlite3')
+            request.POST = request.POST.copy()
+            request.POST['backup_path'] = custom_backup_path
+
+            # Call the method
+            backup_path = view.create_backup_for_import(request)
+
+            # Assertions: returned path and file exists
+            self.assertIsNotNone(backup_path)
+            self.assertEqual(backup_path, custom_backup_path)
+            self.assertTrue(os.path.exists(custom_backup_path))
+
+            # Clean up created backup
+            try:
+                os.remove(custom_backup_path)
+            except OSError:
+                pass
+    
 
 class DatabaseManagementIntegrationTestCase(TestCase):
     """Integration tests using Django's test client"""

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>Rolling Average Report</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .nav-container {
+            margin-bottom: 20px;
+        }
+        .nav-button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .nav-button:hover {
+            background-color: #0056b3;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 10px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 1000px;
+            background-color: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #ddd;
+        }
+        td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        tr:hover {
+            background-color: #f0f0f0;
+        }
+        .age-cell {
+            text-align: left;
+            font-weight: bold;
+        }
+        .rolling-avg-cell {
+            background-color: #e7f3ff;
+            font-weight: bold;
+        }
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="nav-container">
+        <a href="{% url 'pregcheck-reports' %}" class="nav-button">← Back to Reports</a>
+        <a href="/pregchecks" class="nav-button">← Back to Pregnancy Checks</a>
+    </div>
+    
+    <h1>Rolling Average Report — Pregnancy Rate by Age Class</h1>
+    <p>Four-year rolling average pregnancy rates for each age class across the herd.</p>
+
+    {% if rows %}
+    <table border="1" cellpadding="6" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Cow Age</th>
+                {% for season in seasons %}
+                    <th>{{ season }}</th>
+                {% endfor %}
+                <th>Rolling Avg</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td class="age-cell">{{ row.age }}</td>
+                {% for rate in row.season_rates %}
+                    <td>{{ rate }}</td>
+                {% endfor %}
+                <td class="rolling-avg-cell">{{ row.rolling_avg }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="no-data">
+        <p>No data available for this report. Please ensure pregnancy check records exist in the system.</p>
+    </div>
+    {% endif %}
+</body>
+</html>

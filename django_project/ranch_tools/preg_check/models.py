@@ -44,6 +44,9 @@ class Cow(models.Model):
     eid = models.CharField(max_length=20, blank=True, null=True, unique=True)
     comments = models.TextField(blank=True)
 
+    created_on = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    last_modified = models.DateTimeField(auto_now=True, null=True, blank=True)
+
     def __repr__(self):
         return f'"{self.ear_tag_id}-{self.birth_year}"'
 

@@ -3,7 +3,7 @@ import json
 from urllib.parse import urlencode
 
 from django.db.models import F, Q
-from django.http import HttpResponseBadRequest, JsonResponse
+from django.http import HttpResponseBadRequest, JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.views import View

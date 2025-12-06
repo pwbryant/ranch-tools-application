@@ -10,6 +10,7 @@ from ranch_tools.preg_check.views import (
     PregCheckListBySeasonView,
     PregCheckRecordNewAnimalView,
     PregCheckRollingAverageReport,
+    PregCheckRollingAverageReport,
     PregCheckSummaryStatsView,
     PreviousPregCheckListView,
     PregCheckReportFive,

@@ -64,6 +64,7 @@ class PregCheck(models.Model):
     cow = models.ForeignKey('Cow', on_delete=models.CASCADE, blank=True, null=True)
     is_pregnant = models.BooleanField(null=True)
     recheck = models.BooleanField(default=False)
+    should_sell = models.BooleanField(default=False, null=True)
 
     created_on = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     last_modified = models.DateTimeField(auto_now=True, null=True, blank=True)

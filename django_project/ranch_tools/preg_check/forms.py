@@ -32,10 +32,11 @@ class PregCheckForm(forms.ModelForm):
         required=True,
     )
     recheck = forms.BooleanField(label='Recheck', required=False, widget=forms.CheckboxInput())
+    should_sell = forms.BooleanField(label='Should Sell', required=False, widget=forms.CheckboxInput())
 
     class Meta:
         model = PregCheck
-        fields = ['is_pregnant', 'breeding_season', 'comments', 'recheck', 'check_date']
+        fields = ['is_pregnant', 'breeding_season', 'comments', 'recheck', 'check_date', 'should_sell']
         widgets = {
             'is_pregnant': forms.RadioSelect(choices=((True, 'Pregnant'), (False, 'Open'))),
             'breeding_season': forms.TextInput(attrs={'pattern': r'\d{4}', 'title': 'Please enter a four-digit year'}),
@@ -74,7 +75,7 @@ class EditPregCheckForm(forms.ModelForm):
 
     class Meta:
         model = PregCheck
-        fields = ['ear_tag_id', 'birth_year', 'check_date', 'breeding_season', 'is_pregnant', 'comments', 'recheck']
+        fields = ['ear_tag_id', 'birth_year', 'check_date', 'breeding_season', 'is_pregnant', 'comments', 'recheck', 'should_sell']
 
     def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
@@ -103,7 +104,6 @@ class EditPregCheckForm(forms.ModelForm):
         preg_check = super().save(commit=False)
         ear_tag_id = self.cleaned_data.get('ear_tag_id')
         birth_year = self.cleaned_data.get('birth_year')
-        
         if ear_tag_id:
             try:
                 cow = Cow.objects.get(ear_tag_id=ear_tag_id, birth_year=birth_year)
@@ -111,7 +111,7 @@ class EditPregCheckForm(forms.ModelForm):
             except Cow.DoesNotExist:
                 # This shouldn't happen due to clean_ear_tag_id, but just in case
                 raise ValidationError(f"No cow found with ear_tag_id {ear_tag_id}")
-
+        breakpoint()
         if commit:
             preg_check.save()
         return preg_check

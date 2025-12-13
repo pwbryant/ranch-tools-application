@@ -396,6 +396,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('edit-is_pregnant').value = pregcheckData.is_pregnant.toString();
         document.getElementById('edit-comments').value = pregcheckData.comments;
         document.getElementById('edit-recheck').checked = pregcheckData.recheck;
+        document.getElementById('edit-should-sell').checked = pregcheckData.should_sell;        
 
         
         // Show the edit modal
@@ -504,6 +505,23 @@ document.addEventListener('DOMContentLoaded', function() {
         listenToModalClosers('editCowModal', ['#edit-cow-modal-cancel-btn', '#editCowModal .close']);
     }
     listenToEditCowModal();
+
+    // Handle Ear Tag Update Checkbox
+    function handleAllowEarTagUpdate() {
+        const checkbox = document.getElementById('allow_ear_tag_update');
+        const earTagInput = document.getElementById('edit_ear_tag_id');
+        
+        if (checkbox) {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    earTagInput.removeAttribute('readonly');
+                } else {
+                    earTagInput.setAttribute('readonly', 'readonly');
+                }
+            });
+        }
+    }
+    handleAllowEarTagUpdate();
 
 
     // Edit Preg check record 

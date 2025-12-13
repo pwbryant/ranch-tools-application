@@ -9,6 +9,10 @@
             <div class="form-group">
                 <label for="edit_ear_tag_id">Ear Tag ID:</label>
                 <input type="text" id="edit_ear_tag_id" name="ear_tag_id" readonly value="{{ cow.ear_tag_id }}">
+                <div style="margin-top: 8px;">
+                    <input type="checkbox" id="allow_ear_tag_update" name="allow_ear_tag_update">
+                    <label for="allow_ear_tag_update" style="display: inline; margin-left: 5px;">Allow Ear Tag Update</label>
+                </div>
             </div>
             <div class="form-group">
                 <label for="edit_eid">Ear RFID:</label>

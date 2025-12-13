@@ -133,9 +133,11 @@ class PregCheckListView(ListView, InitialzeDatabaseMixin):
             pregcheck_form.fields['pregcheck_rfid'].initial = cow.eid
             pregcheck_form.fields['birth_year'].initial = cow.birth_year
             last_pregcheck = PregCheck.objects.last()
-            last_pregcheck_created_date = last_pregcheck.created_on.date()
-            if last_pregcheck_created_date == datetime.today().astimezone(timezone.utc).date():
-                pregcheck_form.fields['check_date'].initial = last_pregcheck.check_date
+            if last_pregcheck:
+                pregcheck_form.fields['should_sell'].initial = last_pregcheck.should_sell
+                last_pregcheck_created_date = last_pregcheck.created_on.date()
+                if last_pregcheck_created_date == datetime.today().astimezone(timezone.utc).date():
+                    pregcheck_form.fields['check_date'].initial = last_pregcheck.check_date
 
         search_form = AnimalSearchForm(
             initial={'search_ear_tag_id': ear_tag_id,
@@ -361,7 +363,7 @@ class CowCreateView(CreateView):
 
 class CowUpdateView(UpdateView):
     model = Cow
-    fields = ['birth_year', 'eid']
+    fields = ['birth_year', 'eid', 'ear_tag_id']
     template_name = 'path_to_template.html'  # Replace with the path to your template for updating the cow
     
     def form_valid(self, form):
@@ -749,6 +751,7 @@ class PregCheckDetailView(View):
             'breeding_season': pregcheck.breeding_season,
             'comments': pregcheck.comments,
             'recheck': pregcheck.recheck,
+            'should_sell': pregcheck.should_sell,
         }
         cow = pregcheck.cow
         if cow:

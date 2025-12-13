@@ -252,11 +252,13 @@ document.addEventListener('DOMContentLoaded', function() {
 	function handleFormSubmit(event) {
 		event.preventDefault(); // Prevent normal form submission
 		var form = document.getElementById('pregcheck-form');
+        const submitButton = form.querySelector('button[id="pregcheck-form-submit-btn"]');
+        submitButton.disabled = true;
+
 		var messageContainer = document.getElementById('message-container');
 		var modal = document.getElementById('message-modal');
 		var formData = new FormData(form);
-        
-        
+     
         // Validate ear tag ID and "No ID" checkbox
         const earTagIdValue = formData.get('pregcheck_ear_tag_id').trim();
         const rfidValue = formData.get('pregcheck_rfid').trim();
@@ -302,6 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				messageContainer.textContent = 'Something went wrong';
 				messageContainer.classList.add('error');
 				modal.style.display = 'block';
+                submitButton.disabled = false;
 			}
 		};
 		xhr.onerror = function() {
@@ -309,6 +312,7 @@ document.addEventListener('DOMContentLoaded', function() {
 			messageContainer.textContent = 'Something went wrong';
 			messageContainer.classList.add('error');
 			modal.style.display = 'block';
+            submitButton.disabled = false;
 		};
 		xhr.send(formData);
 	}

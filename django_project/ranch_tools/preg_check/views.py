@@ -134,10 +134,13 @@ class PregCheckListView(ListView, InitialzeDatabaseMixin):
             pregcheck_form.fields['birth_year'].initial = cow.birth_year
             last_pregcheck = PregCheck.objects.last()
             if last_pregcheck:
-                pregcheck_form.fields['should_sell'].initial = last_pregcheck.should_sell
                 last_pregcheck_created_date = last_pregcheck.created_on.date()
                 if last_pregcheck_created_date == datetime.today().astimezone(timezone.utc).date():
                     pregcheck_form.fields['check_date'].initial = last_pregcheck.check_date
+            
+            last_cow_pregcheck = PregCheck.objects.filter(cow=cow).order_by('check_date', 'id').last()
+            if last_cow_pregcheck:
+                pregcheck_form.fields['should_sell'].initial = last_cow_pregcheck.should_sell
 
         search_form = AnimalSearchForm(
             initial={'search_ear_tag_id': ear_tag_id,

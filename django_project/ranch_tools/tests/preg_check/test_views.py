@@ -1,6 +1,9 @@
+from datetime import date
+
 from django.test import TestCase, Client
 from django.urls import reverse
-from django.http import JsonResponse
+
+from ranch_tools.preg_check.forms import AnimalSearchForm, PregCheckForm
 from ranch_tools.preg_check.models import Cow, PregCheck, CurrentBreedingSeason
 
 class CowExistsViewTest(TestCase):
@@ -100,6 +103,53 @@ class PregCheckListViewTest(TestCase):
         response = self.client.get(reverse('pregcheck-list'), {'search_ear_tag_id': 'EAR123'})
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'EAR123')
+
+    def test_get_context_data(self):
+        response = self.client.get(reverse('pregcheck-list') + '?search_ear_tag_id=EAR123&search_birth_year=2015')
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('current_breeding_season', response.context)
+
+        self.assertEqual(response.context['current_breeding_season'], 2025)
+        self.assertEqual(response.context['all_preg_checks'], False)
+        self.assertEqual(response.context['latest_breeding_season'], 2025)
+
+        search_form = response.context['search_form']
+        self.assertIsInstance(search_form, AnimalSearchForm)
+        self.assertEqual(search_form['search_ear_tag_id'].value(), 'EAR123')
+        self.assertEqual(search_form['search_rfid'].value(), '')
+        self.assertEqual(search_form['search_birth_year'].value(), 2015)
+
+        pregcheck_form = response.context['pregcheck_form']
+        self.assertIsInstance(pregcheck_form, PregCheckForm)
+        self.assertEqual(pregcheck_form['birth_year'].initial, self.cow.birth_year)
+        self.assertEqual(pregcheck_form.fields['pregcheck_ear_tag_id'].initial, self.cow.ear_tag_id)
+        self.assertEqual(pregcheck_form.fields['pregcheck_rfid'].initial, self.cow.eid)
+        self.assertEqual(pregcheck_form.fields['should_sell'].initial, False)
+        self.assertEqual(pregcheck_form.fields['check_date'].initial, None)
+
+        self.assertEqual(response.context['animal_exists'], True)
+        self.assertEqual(response.context['multiple_matches'], False)
+        self.assertEqual(response.context['distinct_birth_years'], [self.cow.birth_year])
+        self.assertEqual(response.context['cow'], self.cow)        
+
+    def test_get_context_data_should_sell_comes_from_last_cow_pregcheck(self):
+        # Create a pregcheck with should_sell=True
+        pregcheck = PregCheck.objects.create(cow=self.cow, breeding_season=2025, is_pregnant=True, should_sell=True)
+
+        response = self.client.get(reverse('pregcheck-list') + '?search_ear_tag_id=EAR123')
+
+        pregcheck_form = response.context['pregcheck_form']
+        self.assertEqual(pregcheck_form.fields['should_sell'].initial, True)
+
+    def test_get_context_data_check_date_comes_from_last_pregcheck(self):
+        # Create a pregcheck with today's date
+        pregcheck = PregCheck.objects.create(cow=self.cow, breeding_season=2025, is_pregnant=True, check_date=date.today())
+
+        response = self.client.get(reverse('pregcheck-list') + '?search_ear_tag_id=EAR123')
+
+        pregcheck_form = response.context['pregcheck_form']
+        self.assertEqual(pregcheck_form.fields['check_date'].initial, date.today())
+
 
 class PregCheckDetailViewTest(TestCase):
     def setUp(self):

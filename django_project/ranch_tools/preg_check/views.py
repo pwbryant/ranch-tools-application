@@ -407,7 +407,106 @@ class CowExistsView(View):
 
 class PregCheckReportFive(View):
     """Simple view to render Report Five page"""
+
     def get(self, request, *args, **kwargs):
+        # Allow overriding breeding season via query param
+        season = request.GET.get('breeding_season')
+        if season:
+            try:
+                breeding_season = int(season)
+            except ValueError:
+                breeding_season = CurrentBreedingSeason.load().breeding_season
+        else:
+            breeding_season = CurrentBreedingSeason.load().breeding_season
+
+        from django.db import models
+        all_breeding_season_cows = PregCheck.objects.filter(breeding_season=breeding_season)
+
+        all_pregchecks_with_NO_cow = all_breeding_season_cows.filter(cow=None)
+
+        all_pregchecks_with_cow = all_breeding_season_cows.exclude(id__in=all_pregchecks_with_NO_cow)
+        all_pregchecks_with_cow = all_pregchecks_with_cow.annotate(cow_age=breeding_season-models.F('cow__birth_year'))
+
+        all_pregchecks_with_cow_initial = all_pregchecks_with_cow.filter(recheck=False)
+        all_pregchecks_with_cow_recheck = all_pregchecks_with_cow.filter(recheck=True)
+
+        cow_ages = sorted(all_pregchecks_with_cow.values_list('cow_age', flat=True).distinct())
+        cow_ages
+        rows = []
+        for age in cow_ages:
+            birth_year = breeding_season - age
+            age_pregchecks_initial = all_pregchecks_with_cow_initial.filter(cow_age=age)
+            age_pregchecks_recheck = all_pregchecks_with_cow_recheck.filter(cow_age=age)
+            rows.append(self.create_preg_checks_row(age_pregchecks_initial, age_pregchecks_recheck, age=age, birth_year=birth_year))
+
+        all_pregchecks_with_NO_cow_initial = all_pregchecks_with_NO_cow.filter(recheck=False)
+        all_pregchecks_with_NO_cow_recheck = all_pregchecks_with_NO_cow.filter(recheck=True)
+        rows.append(self.create_preg_checks_row(all_pregchecks_with_NO_cow_initial, all_pregchecks_with_NO_cow_recheck))
+        
+        totals_row = self.create_preg_checks_row(all_breeding_season_cows.filter(recheck=False), all_breeding_season_cows.filter(recheck=True))
+
+        totals_row['cow_birth_year'] = 'TOTALS'
+        totals_row['is_totals'] = True
+        context = {
+            'breeding_season': breeding_season,
+            'rows': rows,
+            'totals': totals_row,
+        }
+        return render(request, 'preg_check/report-5.html', context)
+
+    def create_preg_checks_row(self, preg_checks_initial, preg_checks_recheck, age=None, birth_year=None):
+            first_pass_open_count = preg_checks_initial.filter(is_pregnant=False).count()
+            first_pass_pregnant_count = preg_checks_initial.filter(is_pregnant=True).count()
+            first_pass_total = preg_checks_initial.count()
+
+            net_open_count = first_pass_open_count
+            net_pregnant_count = first_pass_pregnant_count
+
+            recheck_preg_count, recheck_open_count = self.get_recheck_counts(preg_checks_recheck, preg_checks_initial)
+
+            net_open_count -= recheck_preg_count
+            net_open_count += recheck_open_count
+            net_pregnant_count += recheck_preg_count
+            net_pregnant_count -= recheck_open_count
+
+            herd_size = preg_checks_initial.count()
+            pct_pregnant = net_pregnant_count / herd_size * 100 
+            return{
+                'cow_birth_year': birth_year,
+                'age': age,
+                'first_pass_open': first_pass_open_count,
+                'first_pass_pregnant': first_pass_pregnant_count,
+                'first_pass_total': first_pass_total,
+                'preg_recheck_count': recheck_preg_count,
+                'net_open': net_open_count, # if recheck, the recheck cow is used
+                'net_pregnant': net_pregnant_count,
+                'pct_pregnant': f"{pct_pregnant:.1f}%",
+            }
+
+    def get_recheck_counts(self, recheck_preg_checks, initial_preg_checks):
+        preg_count = 0
+        open_count = 0
+        recheck_cows = recheck_preg_checks.values_list('cow', flat=True).distinct() # handle multiple rechecks by using recheck cows to source pregcheck
+        for recheck_cow in recheck_cows:
+            recheck_pregcheck = recheck_preg_checks.filter(cow=recheck_cow).last() # default to last preg check for preg value
+            initial_pregcheck = initial_preg_checks.get(cow=recheck_cow)
+        
+            initial_open = initial_pregcheck.is_pregnant == False
+            initial_pregnant = initial_pregcheck.is_pregnant == True
+            recheck_open = recheck_pregcheck.is_pregnant == False
+            recheck_pregnant = recheck_pregcheck.is_pregnant == True
+        
+            if initial_open and recheck_pregnant:
+                preg_count += 1
+        
+            if initial_pregnant and recheck_open:
+                open_count += 1
+                print('WIERD')
+
+        return preg_count, open_count
+
+
+    def xxxget(self, request, *args, **kwargs):
         # Allow overriding breeding season via query param
         season = request.GET.get('breeding_season')
         if season:

@@ -659,15 +659,19 @@ class PregCheckRollingAverageReport(View):
     """
     def get(self, request, *args, **kwargs):
         # Get all unique breeding seasons in descending order
-        all_seasons = PregCheck.objects.values_list('breeding_season', flat=True).distinct().order_by('-breeding_season')
-        if not all_seasons.exists():
+        breeding_season = request.GET.get('breeding_season')
+        if breeding_season:
+            seasons = PregCheck.objects.filter(breeding_season__lte=breeding_season).values_list('breeding_season', flat=True).distinct().order_by('-breeding_season')
+        else:
+            seasons = PregCheck.objects.values_list('breeding_season', flat=True).distinct().order_by('-breeding_season')
+        if not seasons.exists():
             # No data available
             return render(request, 'preg_check/rolling-average-report.html', {
                 'seasons': [],
                 'rows': [],
             })
         
-        seasons_list = sorted(list(all_seasons), reverse=True)[:4]  # Get last 4 seasons
+        seasons_list = sorted(list(seasons), reverse=True)[:4]  # Get last 4 seasons
         seasons_list.sort()  # Sort ascending for display order
         
         # Collect all unique birth years across all seasons

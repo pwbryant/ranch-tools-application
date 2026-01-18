@@ -81,6 +81,12 @@
     <h1>Rolling Average Report — Pregnancy Rate by Age Class</h1>
     <p>Four-year rolling average pregnancy rates for each age class across the herd.</p>
 
+    <form method="get" action="">
+        <label for="breeding_season">Breeding season:</label>
+        <input type="text" id="breeding_season" name="breeding_season" value="{{ breeding_season }}" />
+        <button type="submit">Update Breeding Season</button>
+    </form>
+
     {% if rows %}
     <table border="1" cellpadding="6" cellspacing="0">
         <thead>

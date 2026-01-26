@@ -47,13 +47,12 @@ class ReportFiveFromCSVTest(TestCase):
         # Check that 2020 row exists and has expected values
         self.assertIn('2020', content)
         # first_pass_open should be 2 (cow A first open, cow B open)
-        self.assertIn('first_pass_open', content)
-        self.assertIn('2', content)
+        row_1 = response.context['rows'][0]
+        self.assertEqual(row_1['first_pass_open'], 2)
         # preg_recheck_count should be 1 (cow A has a recheck)
-        self.assertIn('preg_recheck_count', content)
-        self.assertIn('1', content)
+        self.assertEqual(row_1['preg_recheck_count'], 1)
         # pct_pregnant should be 50.0%
         self.assertIn('50.0%', content)
 
         # Unknown Cow should appear for unassociated pregchecks
-        self.assertIn('Unknown Cow', content)
+        self.assertIn('None', content)

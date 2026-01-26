@@ -17,7 +17,11 @@ class AnimalSearchForm(forms.Form):
             required=False
         )
     search_ear_tag_id = forms.CharField(label='Ear Tag ID', required=False)
-    search_rfid = forms.CharField(label='RFID', required=False)
+    search_rfid = forms.CharField(
+        label='EID',
+        required=False,
+        widget=forms.TextInput(attrs={'autofocus': 'autofocus'})
+    )
 
 
 class PregCheckForm(forms.ModelForm):
@@ -56,7 +60,7 @@ class CowForm(forms.ModelForm):
         widget=forms.TextInput(attrs={'readonly': 'readonly'})
     )
     eid = forms.CharField(
-        label='RFID (optional)',
+        label='EID (optional)',
         max_length=255,
         required=False,
         widget=forms.TextInput(attrs={'placeholer': 'RFID'})

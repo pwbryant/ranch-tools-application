@@ -120,11 +120,11 @@
                     <td 
                         class="pct-cell"
                         {% if rate != "—" %}
-                            {% with pct_value=rate|slice:":-1"|floatformat:0 %}
+                            {% with pct_value=rate.rate|slice:":-1"|floatformat:0 %}
                                 data-pct="{{ pct_value }}"
                             {% endwith %}
                         {% endif %}
-                    >{{ rate }}</td>
+                    >{{ rate.rate }}{% if rate != "—" %}(n={{ rate.count }}){% else %}-{% endif %}</td>
                 {% endfor %}
                 <td 
                     class="rolling-avg-cell pct-cell"
@@ -142,8 +142,8 @@
                 {% for rate in totals.season_rates %}
                     <td 
                         class="pct-cell"
-                        {% if rate != "—" %}
-                            {% with pct_value=rate|slice:":-1"|floatformat:0 %}
+                        {% if rate.rate != "—" %}
+                            {% with pct_value=rate.rate|slice:":-1"|floatformat:0 %}
                                 data-pct="{{ pct_value }}"
                             {% endwith %}
                         {% endif %}

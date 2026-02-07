@@ -737,7 +737,10 @@ class PregCheckRollingAverageReport(View):
             # Convert to pregnancy rates
             for age, counts in stats_by_birth_year.items():
                 preg_rate = (counts['pregnant'] / counts['total'] * 100) if counts['total'] > 0 else 0
-                pregnancy_rates_by_season_and_age[season][age] = preg_rate
+                pregnancy_rates_by_season_and_age[season][age] = {
+                    'rate': preg_rate,
+                    'count': counts['total']
+                }
         
         return pregnancy_rates_by_season_and_age
     
@@ -765,9 +768,12 @@ class PregCheckRollingAverageReport(View):
             }
             
             for season in seasons_list:
-                rate = pregnancy_rates_by_season_and_age[season].get(age, None)
-                if rate is not None:
-                    row['season_rates'].append(f"{rate:.1f}%")
+                rate_dict = pregnancy_rates_by_season_and_age[season].get(age, None)
+                if rate_dict is not None:
+                    rate = rate_dict['rate']
+                    rate_dict['rate'] = f"{rate:.1f}%"
+                    count = rate_dict['count']
+                    row['season_rates'].append(rate_dict)
                     row['year_rates'].append(rate)
                 else:
                     row['season_rates'].append("—")
@@ -856,10 +862,10 @@ class PregCheckRollingAverageReport(View):
         
         # Build report rows
         rows = self._build_report_rows(all_ages, seasons_list, pregnancy_rates_by_season_and_age)
+
         
         # Calculate totals row
         totals_row = self._calculate_totals_row(seasons_list)
-        
         context = {
             'seasons': seasons_list,
             'rows': rows,

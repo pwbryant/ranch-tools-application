@@ -25,6 +25,12 @@
         <label for="breeding_season">Breeding season:</label>
         <input type="text" id="breeding_season" name="breeding_season" value="{{ breeding_season }}" />
         <button type="submit">Update Breeding Season</button>
+
+        <label for="low_threshold" style="margin-left: 20px;">Yellow threshold (<%):</label>
+        <input type="number" id="low_threshold" name="low_threshold" value="70" min="0" max="100" />
+        
+        <label for="high_threshold" style="margin-left: 30px;">Green threshold (>=%):</label>
+        <input type="number" id="high_threshold" name="high_threshold" value="90" min="0" max="100" />        
     </form>
 
     <table border="1" cellpadding="6" cellspacing="0">
@@ -53,12 +59,9 @@
                 <td>{{ row.net_open }}</td>
                 <td>{{ row.net_pregnant }}</td>
                 <td 
+                    class="pct-cell"
                     {% with pct_value=row.pct_pregnant|slice:":-1"|floatformat:0 %}
-                        {% if pct_value|add:"0" >= 90 %}
-                            class="green-bg"
-                        {% elif pct_value|add:"0" < 70 %}
-                            class="yellow-bg"
-                        {% endif %}
+                        data-pct="{{ pct_value }}"
                     {% endwith %}
                 >{{ row.pct_pregnant }}</td>
             </tr>
@@ -76,17 +79,47 @@
                 <td>{{ totals.net_open }}</td>
                 <td>{{ totals.net_pregnant }}</td>
                 <td 
+                    class="pct-cell"
                     {% with pct_value=totals.pct_pregnant|slice:":-1"|floatformat:0 %}
-                        {% if pct_value|add:"0" >= 90 %}
-                            class="green-bg"
-                        {% elif pct_value|add:"0" < 70 %}
-                            class="yellow-bg"
-                        {% endif %}
+                        data-pct="{{ pct_value }}"
                     {% endwith %}
                 >{{ totals.pct_pregnant }}</td>
             </tr>
             {% endif %}
         </tbody>
     </table>
+    
+    <script>
+        function applyThresholdColoring() {
+            const highThreshold = parseInt(document.getElementById('high_threshold').value);
+            const lowThreshold = parseInt(document.getElementById('low_threshold').value);
+            
+            // Get all cells with percentage data
+            const cells = document.querySelectorAll('.pct-cell[data-pct]');
+            
+            cells.forEach(cell => {
+                const pctValue = parseInt(cell.getAttribute('data-pct'));
+                
+                // Remove existing classes
+                cell.classList.remove('green-bg', 'yellow-bg');
+                
+                // Apply appropriate class based on thresholds
+                if (pctValue >= highThreshold) {
+                    cell.classList.add('green-bg');
+                } else if (pctValue < lowThreshold) {
+                    cell.classList.add('yellow-bg');
+                }
+            });
+        }
+        
+        // Apply coloring on page load
+        document.addEventListener('DOMContentLoaded', applyThresholdColoring);
+        
+        // Re-apply coloring when threshold inputs change
+        document.getElementById('high_threshold').addEventListener('change', applyThresholdColoring);
+        document.getElementById('high_threshold').addEventListener('input', applyThresholdColoring);
+        document.getElementById('low_threshold').addEventListener('change', applyThresholdColoring);
+        document.getElementById('low_threshold').addEventListener('input', applyThresholdColoring);
+    </script>
 </body>
 </html>

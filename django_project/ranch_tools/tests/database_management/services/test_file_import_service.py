@@ -203,7 +203,7 @@ class PregCheckImportServiceTestCase(TestCase):
                 'check_date': '2024-03-15',
                 'comments': 'Second',
                 'is_pregnant': 'O',
-                'recheck': True
+                'recheck': False
             }
         ]
         

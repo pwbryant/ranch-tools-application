@@ -3,7 +3,7 @@ import json
 from urllib.parse import urlencode
 
 from django.db import models
-from django.db.models import F, Q
+from django.db.models import F, Q, Max
 from django.http import HttpResponseBadRequest, JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
@@ -456,7 +456,7 @@ class PregCheckReportFive(View):
         no_cow_row = self.create_preg_checks_row(all_pregchecks_with_NO_cow_initial, all_pregchecks_with_NO_cow_recheck)
         if no_cow_row: 
             rows.append(no_cow_row)
-        
+
         totals_row = self.create_preg_checks_row(all_breeding_season_cows.filter(recheck=False), all_breeding_season_cows.filter(recheck=True))
 
         totals_row['cow_birth_year'] = 'TOTALS'
@@ -503,11 +503,17 @@ class PregCheckReportFive(View):
     def get_recheck_counts(self, recheck_preg_checks, initial_preg_checks):
         preg_count = 0
         open_count = 0
-        recheck_cows = recheck_preg_checks.values_list('cow', flat=True).distinct() # handle multiple rechecks by using recheck cows to source pregcheck
+        recheck_cows = recheck_preg_checks.exclude(cow=None).values_list('cow', flat=True).distinct()
         for recheck_cow in recheck_cows:
             recheck_pregcheck = recheck_preg_checks.filter(cow=recheck_cow).last() # default to last preg check for preg value
-            initial_pregcheck = initial_preg_checks.get(cow=recheck_cow)
-        
+            try:
+                initial_pregcheck = initial_preg_checks.get(cow=recheck_cow)
+            except:
+                print(recheck_cow)
+                class MockPG:
+                    is_pregnant = False
+                initial_pregcheck = MockPG                
+                
             initial_open = initial_pregcheck.is_pregnant == False
             initial_pregnant = initial_pregcheck.is_pregnant == True
             recheck_open = recheck_pregcheck.is_pregnant == False
@@ -674,169 +680,7 @@ class PregCheckRollingAverageReport(View):
     Displays pregnancy rates for each age class across recent breeding seasons
     and computes a rolling 4-year average.
     """
-    
-    def _get_breeding_seasons(self, breeding_season=None):
-        """
-        Retrieve and sort breeding seasons.
-        Returns list of up to 4 most recent seasons, sorted ascending.
-        """
-        if breeding_season:
-            seasons = PregCheck.objects.filter(
-                breeding_season__lte=breeding_season
-            ).values_list('breeding_season', flat=True).distinct().order_by('-breeding_season')
-        else:
-            seasons = PregCheck.objects.values_list(
-                'breeding_season', flat=True
-            ).distinct().order_by('-breeding_season')
-        
-        if not seasons.exists():
-            return None
-        
-        seasons_list = sorted(list(seasons), reverse=True)[:4]  # Get last 4 seasons
-        seasons_list.sort()  # Sort ascending for display order
-        return seasons_list
-    
-    def _calculate_pregnancy_rates_by_season_and_age(self, seasons_list):
-        """
-        Calculate pregnancy rates by season and age.
-        Returns dict: {season: {age: pregnancy_rate}}
-        """
-        pregnancy_rates_by_season_and_age = {}
-        
-        for season in seasons_list:
-            pregnancy_rates_by_season_and_age[season] = {}
-            
-            # Get all pregchecks for this season
-            season_pregchecks = PregCheck.objects.filter(
-                breeding_season=season
-            ).select_related('cow').order_by('cow__ear_tag_id', '-check_date')
-            
-            # Group by cow to get last check only
-            last_check_by_cow = {}
-            for pc in season_pregchecks:
-                if pc.cow and pc.cow.birth_year is not None:
-                    cow_key = f"cow-{pc.cow.id}"
-                    if cow_key not in last_check_by_cow:
-                        last_check_by_cow[cow_key] = pc
-            
-            # Aggregate by birth year (which becomes age class for this season)
-            stats_by_birth_year = {}
-            for pc in last_check_by_cow.values():
-                if pc.cow and pc.cow.birth_year is not None:
-                    birth_year = pc.cow.birth_year
-                    age = season - birth_year
-                    
-                    entry = stats_by_birth_year.setdefault(age, {
-                        'total': 0,
-                        'pregnant': 0,
-                    })
-                    entry['total'] += 1
-                    if pc.is_pregnant:
-                        entry['pregnant'] += 1
-            
-            # Convert to pregnancy rates
-            for age, counts in stats_by_birth_year.items():
-                preg_rate = (counts['pregnant'] / counts['total'] * 100) if counts['total'] > 0 else 0
-                pregnancy_rates_by_season_and_age[season][age] = {
-                    'rate': preg_rate,
-                    'count': counts['total']
-                }
-        
-        return pregnancy_rates_by_season_and_age
-    
-    def _get_all_ages(self, pregnancy_rates_by_season_and_age):
-        """
-        Determine all age classes present across all seasons.
-        Returns sorted list of ages.
-        """
-        all_ages = set()
-        for season_rates in pregnancy_rates_by_season_and_age.values():
-            all_ages.update(season_rates.keys())
-        return sorted(list(all_ages))
-    
-    def _build_report_rows(self, all_ages, seasons_list, pregnancy_rates_by_season_and_age):
-        """
-        Build report rows with season rates and rolling averages.
-        Returns list of row dicts with age and rate data.
-        """
-        rows = []
-        for age in all_ages:
-            row = {
-                'age': age,
-                'season_rates': [],
-                'year_rates': []
-            }
-            
-            for season in seasons_list:
-                rate_dict = pregnancy_rates_by_season_and_age[season].get(age, None)
-                if rate_dict is not None:
-                    rate = rate_dict['rate']
-                    rate_dict['rate'] = f"{rate:.1f}%"
-                    count = rate_dict['count']
-                    row['season_rates'].append(rate_dict)
-                    row['year_rates'].append(rate)
-                else:
-                    row['season_rates'].append("—")
-            
-            # Calculate rolling 4-year average (average of available years)
-            if row['year_rates']:
-                rolling_avg = sum(row['year_rates']) / len(row['year_rates'])
-                row['rolling_avg'] = f"{rolling_avg:.1f}%"
-            else:
-                row['rolling_avg'] = "—"
-            
-            rows.append(row)
-        
-        return rows
-    
-    def _calculate_totals_row(self, seasons_list):
-        """
-        Returns dict with aggregated data or None if no rows.
-        """
-        # For each season, calculate the average pregnancy rate across all ages
-        season_averages = []
-        for season in seasons_list:
-            preg_checks = PregCheck.objects.filter(breeding_season=season)
-            no_cow_preg_checks = preg_checks.filter(cow=None)
-            have_cow_preg_checks = preg_checks.exclude(id__in=no_cow_preg_checks)
-            sorted_preg_checks = have_cow_preg_checks.select_related('cow').order_by('cow__ear_tag_id', '-check_date')
-            # Group by cow to get last check only
-            stats = {
-                'herd_total': 0,
-                'pregnant': 0
-            }
-            cow_id_set = set()
-            for pc in sorted_preg_checks:
-                if pc.cow and pc.cow.birth_year is not None:
-                    cow = pc.cow
-                    cow_key = f"{cow.ear_tag_id}-{cow.birth_year}"
-                    if cow_key not in cow_id_set:
-                        cow_id_set.add(cow_key)
-                        stats['herd_total'] += 1
-                        if pc.is_pregnant:
-                            stats['pregnant'] += 1
 
-            for pc in no_cow_preg_checks:
-                stats['herd_total'] += 1
-                if pc.is_pregnant:
-                    stats['pregnant'] += 1
-
-            preg_rate = (stats['pregnant'] / stats['herd_total'] * 100) if stats['herd_total'] > 0 else 0
-            season_averages.append(preg_rate)        
-
-        if season_averages:
-            overall_rolling_avg = sum(season_averages) / len(season_averages)
-            overall_rolling_avg_str = f"{overall_rolling_avg:.1f}%"
-        else:
-            overall_rolling_avg_str = "—"
-        
-        return {
-            'age': 'AVERAGE',
-            'season_rates': [f"{s:.1f}%" for s in season_averages],
-            'year_rates': [s if s != "—" else None for s in season_averages],
-            'rolling_avg': overall_rolling_avg_str,
-        }
-    
     def get(self, request, *args, **kwargs):
         """Orchestrate the rolling average report generation."""
         breeding_season = request.GET.get('breeding_season')
@@ -863,15 +707,185 @@ class PregCheckRollingAverageReport(View):
         # Build report rows
         rows = self._build_report_rows(all_ages, seasons_list, pregnancy_rates_by_season_and_age)
 
-        
         # Calculate totals row
-        totals_row = self._calculate_totals_row(seasons_list)
+        totals_row = self._calculate_totals_row(all_ages, seasons_list, pregnancy_rates_by_season_and_age)
+        # breakpoint()
+
         context = {
             'seasons': seasons_list,
             'rows': rows,
             'totals': totals_row,
         }
         return render(request, 'preg_check/rolling-average-report.html', context)
+
+    def _get_breeding_seasons(self, breeding_season=None):
+        """
+        Retrieve and sort breeding seasons.
+        Returns list of up to 4 most recent seasons, sorted ascending.
+        """
+        if not breeding_season:
+            breeding_season = CurrentBreedingSeason.breeding_season
+           
+        if not isinstance(breeding_season, (int, str)):
+            breeding_season = PregCheck.objects.aggregate(
+                max_breeding_season=Max('breeding_season')
+            )['max_breeding_season']
+
+        if not breeding_season:
+            return None
+
+        breeding_season_int = int(breeding_season)
+        seasons = list(range(breeding_season_int - 4, breeding_season_int + 1))
+
+        if not PregCheck.objects.filter(breeding_season__in=seasons).exists():
+            return None
+        
+        seasons_list = sorted(list(seasons), reverse=True)[:4]  # Get last 4 seasons
+        seasons_list.sort()  # Sort ascending for display order
+        return seasons_list
+    
+    def _calculate_pregnancy_rates_by_season_and_age(self, seasons_list):
+        """
+        Calculate pregnancy rates by season and age.
+        Returns dict: {season: {age: pregnancy_rate}}
+        """
+        pregnancy_rates_by_season_and_age = {}
+        
+        for season in seasons_list:
+            pregnancy_rates_by_season_and_age[season] = {}
+            
+            # Get all pregchecks for this season
+            season_pregchecks = PregCheck.objects.filter(
+                breeding_season=season
+            ).select_related('cow').order_by('cow__ear_tag_id', '-check_date')
+            
+            # Group by cow to get last check only
+            last_check_by_cow = {}
+            for pc in season_pregchecks:
+                cow_key = None
+                if pc.cow and pc.cow.birth_year is not None:
+                    cow_key = f"cow-{pc.cow.id}"
+                else:
+                    cow_key = f"precheck-{pc.id}" # pregchecks where there is no sufficietn cow id, will used preg check id as proxy for counting purposes
+
+                if cow_key not in last_check_by_cow:
+                    last_check_by_cow[cow_key] = pc
+            
+            # Aggregate by birth year (which becomes age class for this season)
+            stats_by_birth_year = {}
+            for pc in last_check_by_cow.values():
+                age = None
+                if pc.cow and pc.cow.birth_year is not None:
+                    birth_year = pc.cow.birth_year
+                    age = season - birth_year
+                    
+                entry = stats_by_birth_year.setdefault(age, {
+                    'total': 0,
+                    'pregnant': 0,
+                })
+                entry['total'] += 1
+                if pc.is_pregnant:
+                    entry['pregnant'] += 1
+            
+            # Convert to pregnancy rates
+            for age, counts in stats_by_birth_year.items():
+                preg_rate = (counts['pregnant'] / counts['total'] * 100) if counts['total'] > 0 else 0
+                pregnancy_rates_by_season_and_age[season][age] = {
+                    'pregnant': counts['pregnant'],
+                    'rate': preg_rate,
+                    'count': counts['total']
+                }
+        
+        return pregnancy_rates_by_season_and_age
+    
+    def _get_all_ages(self, pregnancy_rates_by_season_and_age):
+        """
+        Determine all age classes present across all seasons.
+        Returns sorted list of ages.
+        """
+        all_ages = set()
+        for season_rates in pregnancy_rates_by_season_and_age.values():
+            all_ages.update(season_rates.keys())
+        if None in all_ages:
+            return sorted([a for a in all_ages if a is not None]) + [None]
+        return sorted(list(all_ages))
+    
+    def _build_report_rows(self, all_ages, seasons_list, pregnancy_rates_by_season_and_age):
+        """
+        Build report rows with season rates and rolling averages.
+        Returns list of row dicts with age and rate data.
+        """
+        rows = []
+        for age in all_ages:
+            row = {
+                'age': age,
+                'season_rates': [],
+                'year_rates': []
+            }
+            
+            for season in seasons_list:
+                rate_dict = pregnancy_rates_by_season_and_age[season].get(age, None)
+                if rate_dict is not None:
+                    rate = rate_dict['rate']
+                    rate_dict['rate'] = f"{rate:.1f}%"
+                    row['season_rates'].append(rate_dict)
+                    row['year_rates'].append(rate)
+                else:
+                    row['season_rates'].append("—")
+            
+            # Calculate rolling 4-year average (average of available years)
+            if row['year_rates']:
+                rolling_avg = sum(row['year_rates']) / len(row['year_rates'])
+                row['rolling_avg'] = f"{rolling_avg:.1f}%"
+            else:
+                row['rolling_avg'] = "—"
+            
+            rows.append(row)
+        
+        return rows
+    
+    def _calculate_totals_row(self, all_ages: list, seasons_list: list, pregnancy_rates_by_season_and_age: dict):
+        """
+        Returns dict with aggregated data or None if no rows.
+        """
+        # For each season, calculate the average pregnancy rate across all ages
+        season_averages = []
+        for season in seasons_list:
+            season_dict = pregnancy_rates_by_season_and_age.get(season)
+            if not season_dict:
+                season_averages.append('-')
+                continue
+
+            # Group by cow to get last check only
+            stats = {
+                'herd_total': 0,
+                'pregnant': 0
+            }
+            for age in all_ages:
+                age_dict = season_dict.get(age)
+                if age_dict is None:
+                    continue
+                stats['herd_total'] += age_dict['count']
+                stats['pregnant'] += age_dict['pregnant']
+            preg_rate = (stats['pregnant'] / stats['herd_total'] * 100) if stats['herd_total'] > 0 else 0
+            season_averages.append(
+                {
+                    'rate': preg_rate,
+                    'count': stats['herd_total']
+                }
+            )        
+
+        actual_season_averages = [a['rate'] for a in season_averages if a != '-']
+        if actual_season_averages:
+            overall_rolling_avg = sum(actual_season_averages) / len(actual_season_averages)
+            overall_rolling_avg_str = f"{overall_rolling_avg:.1f}%"
+        else:
+            overall_rolling_avg_str = "-"
+        return {
+            'age': 'AVERAGE',
+            'season_rates': [{'rate': f"{s['rate']:.1f}%", 'count': s['count']} if s != '-' else s for s in season_averages],
+            'rolling_avg': overall_rolling_avg_str,
+        }
 
 
 class ReportsHubView(View):
@@ -907,9 +921,14 @@ class PregCheckEditView(View):
             form.save()
             return JsonResponse({'success': 'PregCheck updated successfully'})
         else:
-            errors = form.errors.as_json()
+            # Return form errors as JSON for AJAX
+            errors = {}
+            for field, field_errors in form.errors.items():
+                if field == '__all__':
+                    errors['form'] = list(field_errors)
+                else:
+                    errors[field] = list(field_errors)
             return JsonResponse({'errors': errors}, status=400)
-
 
 class PregCheckDetailView(View):
 

@@ -20,7 +20,7 @@ class SingletonModel(models.Model):
 
 
 class CurrentBreedingSeason(SingletonModel):
-    breeding_season = models.PositiveIntegerField()
+    breeding_season = models.PositiveIntegerField() # TODO: add validation so this is a 4 digit year
 
     def __repr__(self):
         return f"Current Breeding Season: {self.breeding_season}"
@@ -58,6 +58,19 @@ class Cow(models.Model):
 
 
 class PregCheck(models.Model):
+    def save(self, *args, **kwargs):
+        if self.recheck and self.cow:
+            previous = PregCheck.objects.filter(
+                cow=self.cow,
+                breeding_season=self.breeding_season,
+                recheck=False
+            ).exists()
+            if not previous:
+                raise ValueError(
+                    f"Cannot mark as recheck: no previous non-recheck PregCheck "
+                    f"found for {self.cow} in breeding season {self.breeding_season}"
+                )
+        super().save(*args, **kwargs)
     breeding_season = models.IntegerField()
     check_date = models.DateField(null=True, blank=True)
     comments = models.TextField(blank=True)

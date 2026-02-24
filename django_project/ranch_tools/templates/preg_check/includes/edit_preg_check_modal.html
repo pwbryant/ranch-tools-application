@@ -3,6 +3,9 @@
     <div class="modal-content">
         <span class="close">&times;</span>
         <h2>Edit Pregnancy Record</h2>
+        <div id="form-errors" class="form-errors" style="display: none;">
+            <div class="error-message"></div>
+        </div>
         <form id="edit-pregcheck-form" method="post" action=""> 
             {% csrf_token %}
             <input type="hidden" id="edit-pregcheck-id" name="pregcheck_id" value="">
@@ -21,7 +24,7 @@
             <div class="form-group">
                 <label for="edit-check_date">Check Date</label>
                 <input id="edit-check_date" name="check_date"/>
-                </select>
+
             </div>
             <div class="form-group">
                 <label for="edit-is_pregnant">Is Pregnant:</label>
@@ -41,6 +44,10 @@
             <div class="form-group">
                 <label for="edit-should-sell">Should Sell</label>
                 <input id="edit-should-sell" type="checkbox" name="should_sell"/>
+            </div>
+            <div class="form-group">
+                <label for="edit-new-cow">Create new cow if not found</label>
+                <input id="edit-new-cow" type="checkbox" name="new_cow"/>
             </div>
             <!-- Add more form fields as needed -->
             <input type="submit" value="Save">

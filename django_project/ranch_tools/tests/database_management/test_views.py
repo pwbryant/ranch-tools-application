@@ -63,7 +63,7 @@ class DatabaseExportTestCase(TestCase):
             check_date=date(2023, 6, 20),
             comments='Second check',
             is_pregnant=False,
-            recheck=True
+            recheck=False
         )
         
         # Pregnancy check without cow

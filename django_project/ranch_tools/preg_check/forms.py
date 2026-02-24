@@ -1,5 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 from .models import Cow, PregCheck
 
@@ -75,22 +76,39 @@ class CowForm(forms.ModelForm):
 
 class EditPregCheckForm(forms.ModelForm):
     ear_tag_id = forms.CharField(max_length=10, required=False)
-    birth_year = forms.CharField(max_length=4, required=False)
+    birth_year = forms.IntegerField(validators=[
+        MinValueValidator(1000),
+        MaxValueValidator(9999)
+    ])
+    breeding_season = forms.IntegerField(validators=[
+        MinValueValidator(1000),
+        MaxValueValidator(9999)
+    ])
+    new_cow = forms.BooleanField(label='Create new cow if not found', required=False)
 
     class Meta:
         model = PregCheck
         fields = ['ear_tag_id', 'birth_year', 'check_date', 'breeding_season', 'is_pregnant', 'comments', 'recheck', 'should_sell']
 
     def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            if self.instance.cow:
-                self.fields['ear_tag_id'].initial = self.instance.cow.ear_tag_id
-                self.fields['birth_year'].initial = self.instance.cow.birth_year
+        super().__init__(*args, **kwargs)
+        if self.instance.cow:
+            self.fields['ear_tag_id'].initial = self.instance.cow.ear_tag_id
+            self.fields['birth_year'].initial = self.instance.cow.birth_year
 
     def clean(self):
         cleaned_data = super().clean()
+        # breakpoint()
+        if self.errors:
+            return cleaned_data
+
         ear_tag_id = cleaned_data.get('ear_tag_id')
         birth_year = cleaned_data.get('birth_year')
+        new_cow = cleaned_data.get('new_cow', False)
+
+        # Skip existence check if user intends to create a new cow
+        if new_cow:
+            return cleaned_data
         if ear_tag_id and birth_year:
             try:
                 cow = Cow.objects.get(ear_tag_id=ear_tag_id, birth_year=birth_year)
@@ -108,14 +126,23 @@ class EditPregCheckForm(forms.ModelForm):
         preg_check = super().save(commit=False)
         ear_tag_id = self.cleaned_data.get('ear_tag_id')
         birth_year = self.cleaned_data.get('birth_year')
+        new_cow = self.cleaned_data.get('new_cow', False)
+        
         if ear_tag_id:
             try:
                 cow = Cow.objects.get(ear_tag_id=ear_tag_id, birth_year=birth_year)
                 preg_check.cow = cow
             except Cow.DoesNotExist:
-                # This shouldn't happen due to clean_ear_tag_id, but just in case
-                raise ValidationError(f"No cow found with ear_tag_id {ear_tag_id}")
-        breakpoint()
+                if new_cow:
+                    # Create a new cow record
+                    cow = Cow.objects.create(
+                        ear_tag_id=ear_tag_id,
+                        birth_year=birth_year if birth_year else None
+                    )
+                    preg_check.cow = cow
+                else:
+                    raise ValidationError(f"No cow found with ear_tag_id {ear_tag_id}")
+        
         if commit:
             preg_check.save()
         return preg_check

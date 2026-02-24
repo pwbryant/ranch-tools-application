@@ -330,6 +330,16 @@ document.addEventListener('DOMContentLoaded', function() {
 	function closePregCheckEditModal() {
 		var modal = document.getElementById('edit-modal');
 		modal.style.display = 'none';
+		// Clear error messages
+		const errorContainer = document.querySelector('#form-errors .error-message');
+		if (errorContainer) {
+			errorContainer.innerHTML = '';
+		}
+		// Hide the form-errors div
+		const formErrorsDiv = document.getElementById('form-errors');
+		if (formErrorsDiv) {
+			formErrorsDiv.style.display = 'none';
+		}
 	}
 
 	function closeEditCowModal() {
@@ -597,30 +607,45 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const formData = new FormData(this);
         const pregcheckId = document.getElementById('edit-pregcheck-id').value;
+        const errorContainer = document.querySelector('#form-errors .error-message');
+        
+        // Clear previous errors
+        errorContainer.innerHTML = '';
         
         fetch(`/pregchecks/${pregcheckId}/edit/`, {
             method: 'POST',
             body: formData,
             headers: {
-                'X-CSRFToken': getCookie('csrftoken'), // Include CSRF token
+                'X-CSRFToken': getCookie('csrftoken'),
             },
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // Handle success (e.g., close modal, update UI)
+                // Handle success
+                console.log('sub success')
                 closePregCheckEditModal();
                 location.reload();
             } else if (data.errors) {
-                // Handle form errors (e.g., display error messages)
-                console.error('Form errors:', data.errors);
-            } else {
-                // Handle other errors or unexpected responses
-                console.error('Unexpected response:', data);
+                // Display form errors in modal
+                console.log('errors', data.errors);
+                const formErrorsDiv = document.getElementById('form-errors');
+                let errorHTML = '<div class="errors" style="color:red;"><h4>Errors</h4>';
+                for (const [field, errors] of Object.entries(data.errors)) {
+
+                    errors.forEach(error => {
+                        errorHTML += `<p><strong>${field}:</strong> ${error}</p>`;
+                    });
+                }
+                errorHTML += '</div><hr>'
+                errorContainer.innerHTML = errorHTML;
+                formErrorsDiv.style.display = 'block';
             }
         })
         .catch(error => {
             console.error('Error:', error);
+            errorContainer.innerHTML = '<p>An error occurred. Please try again.</p>';
+            document.getElementById('form-errors').style.display = 'block';
         });
     });
 

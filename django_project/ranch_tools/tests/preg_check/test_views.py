@@ -6,6 +6,7 @@ from django.urls import reverse
 from ranch_tools.preg_check.forms import AnimalSearchForm, PregCheckForm
 from ranch_tools.preg_check.models import Cow, PregCheck, CurrentBreedingSeason
 
+
 class CowExistsViewTest(TestCase):
     def setUp(self):
         self.client = Client()
@@ -208,17 +209,6 @@ class CowCreateUpdateViewTest(TestCase):
             self.client.post(self.update_url, data)
 
         self.assertEqual(str(context.exception), 'There is more than one cow associated with this information.')
-
-    # def test_form_invalid(self):
-    #     """Test invalid form submission."""
-    #     data = {
-    #         'ear_tag_id': '',  # Missing required field
-    #         'eid': 'RFID123',
-    #         'birth_year': 2015,
-    #     }
-    #     response = self.client.post(self.create_url, data)
-    #     self.assertEqual(response.status_code, 200)  # Form invalid, re-render the form
-    #     self.assertFormError(response, 'form', 'ear_tag_id', 'This field is required.')
 
 
 class PregCheckReportFiveDetailedTest(TestCase):
@@ -486,3 +476,4 @@ class PregCheckRollingAverageReportTest(TestCase):
         content = response.content.decode('utf-8')
         # Should show 66.7% for age 4
         self.assertIn('66.7%', content)
+

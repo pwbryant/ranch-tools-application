@@ -86,7 +86,7 @@
         <a href="/pregchecks" class="nav-button">← Back to Pregnancy Checks</a>
     </div>
     
-    <h1>Rolling Average Report — Pregnancy Rate by Age Class</h1>
+    <h1>{{ breeding_season }} Season Rolling Average Report — Pregnancy Rate by Age Class</h1>
     <p>Four-year rolling average pregnancy rates for each age class across the herd.</p>
 
     <form method="get" action="">
@@ -95,10 +95,10 @@
         <button type="submit">Update Breeding Season</button>
 
         <label for="low_threshold" style="margin-left: 20px;">Yellow threshold (<%):</label>
-        <input type="number" id="low_threshold" name="low_threshold" value="70" min="0" max="100" />
+        <input type="number" id="low_threshold" name="low_threshold" value="70" min="0" max="100" step="0.1"/>
         
         <label for="high_threshold" style="margin-left: 30px;">Green threshold (>=%):</label>
-        <input type="number" id="high_threshold" name="high_threshold" value="90" min="0" max="100" />        
+        <input type="number" id="high_threshold" name="high_threshold" value="90" min="0" max="100" step="0.1"/>        
     </form>
 
     {% if rows %}
@@ -120,7 +120,7 @@
                     <td 
                         class="pct-cell"
                         {% if rate != "—" %}
-                            {% with pct_value=rate.rate|slice:":-1"|floatformat:0 %}
+                            {% with pct_value=rate.rate|slice:":-1"|floatformat:1 %}
                                 data-pct="{{ pct_value }}"
                             {% endwith %}
                         {% endif %}
@@ -129,7 +129,7 @@
                 <td 
                     class="rolling-avg-cell pct-cell"
                     {% if row.rolling_avg != "—" %}
-                        {% with pct_value=row.rolling_avg|slice:":-1"|floatformat:0 %}
+                        {% with pct_value=row.rolling_avg|slice:":-1"|floatformat:1 %}
                             data-pct="{{ pct_value }}"
                         {% endwith %}
                     {% endif %}
@@ -143,7 +143,7 @@
                     <td 
                         class="pct-cell"
                         {% if rate != "-" %}
-                            {% with pct_value=rate.rate|slice:":-1"|floatformat:0 %}
+                            {% with pct_value=rate.rate|slice:":-1"|floatformat:1 %}
                                 data-pct="{{ pct_value }}"
                             {% endwith %}
                         {% endif %}
@@ -152,7 +152,7 @@
                 <td 
                     class="pct-cell"
                     {% if totals.rolling_avg != "—" %}
-                        {% with pct_value=totals.rolling_avg|slice:":-1"|floatformat:0 %}
+                        {% with pct_value=totals.rolling_avg|slice:":-1"|floatformat:1 %}
                             data-pct="{{ pct_value }}"
                         {% endwith %}
                     {% endif %}
@@ -161,6 +161,45 @@
             {% endif %}
         </tbody>
     </table>
+
+    {% comment %} No Cow Pregcheck table {% endcomment %}
+    <h2>Unknown Cow Preg Checks</h2>
+    <table border="1" cellpadding="6" cellspacing="0">
+        <thead>
+            <tr>
+                {% for season in seasons %}
+                    <th>{{ season }}</th>
+                {% endfor %}
+                <th>Rolling Avg</th>
+            </tr>
+        </thead>
+        <tbody>
+        <tbody>
+            {% for row in no_cow_rows %}
+            <tr>
+                {% for rate in row.season_rates %}
+                    <td 
+                        class="pct-cell"
+                        {% if rate != "—" %}
+                            {% with pct_value=rate.rate|slice:":-1"|floatformat:1 %}
+                                data-pct="{{ pct_value }}"
+                            {% endwith %}
+                        {% endif %}
+                    >{{ rate.rate }}{% if rate != "—" %}(n={{ rate.count }}){% else %}-{% endif %}</td>
+                {% endfor %}
+                <td 
+                    class="rolling-avg-cell pct-cell"
+                    {% if row.rolling_avg != "—" %}
+                        {% with pct_value=row.rolling_avg|slice:":-1"|floatformat:1 %}
+                            data-pct="{{ pct_value }}"
+                        {% endwith %}
+                    {% endif %}
+                >{{ row.rolling_avg }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
     {% else %}
     <div class="no-data">
         <p>No data available for this report. Please ensure pregnancy check records exist in the system.</p>
@@ -169,14 +208,14 @@
     
     <script>
         function applyThresholdColoring() {
-            const highThreshold = parseInt(document.getElementById('high_threshold').value);
-            const lowThreshold = parseInt(document.getElementById('low_threshold').value);
+            const highThreshold = parseFloat(document.getElementById('high_threshold').value);
+            const lowThreshold = parseFloat(document.getElementById('low_threshold').value);
             
             // Get all cells with percentage data
             const cells = document.querySelectorAll('.pct-cell[data-pct]');
             
             cells.forEach(cell => {
-                const pctValue = parseInt(cell.getAttribute('data-pct'));
+                const pctValue = parseFloat(cell.getAttribute('data-pct'));
                 
                 // Remove existing classes
                 cell.classList.remove('high-pct', 'low-pct');
@@ -198,6 +237,18 @@
         document.getElementById('high_threshold').addEventListener('input', applyThresholdColoring);
         document.getElementById('low_threshold').addEventListener('change', applyThresholdColoring);
         document.getElementById('low_threshold').addEventListener('input', applyThresholdColoring);
+        
+        // Prevent form submission when pressing Enter in threshold inputs
+        document.getElementById('high_threshold').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+            }
+        });
+        document.getElementById('low_threshold').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+            }
+        });
     </script>
 </body>
 </html>

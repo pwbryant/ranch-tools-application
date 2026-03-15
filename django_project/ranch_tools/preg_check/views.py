@@ -430,7 +430,6 @@ class PregCheckReportFive(View):
             }
             return render(request, 'preg_check/report-5.html', context)
 
-
         all_pregchecks_with_NO_cow = all_breeding_season_cows.filter(cow=None)
 
         all_pregchecks_with_cow = all_breeding_season_cows.exclude(id__in=all_pregchecks_with_NO_cow)
@@ -694,8 +693,10 @@ class PregCheckRollingAverageReport(View):
             })
         
         # Calculate pregnancy rates by season and age
-        pregnancy_rates_by_season_and_age = self._calculate_pregnancy_rates_by_season_and_age(seasons_list)
-        
+        pregnancy_rates_by_season_and_age = self._calculate_pregnancy_rates_by_season_and_age_for_pregchecks_with_cows(seasons_list)
+
+        pregnancy_rates_by_season_and_age_for_NO_cow_pregchecks = self._calculate_pregnancy_rates_by_season_and_age_for_pregchecks_with_NO_cows(seasons_list)
+
         # Get all ages
         all_ages = self._get_all_ages(pregnancy_rates_by_season_and_age)
         if not all_ages:
@@ -705,16 +706,18 @@ class PregCheckRollingAverageReport(View):
             })
         
         # Build report rows
-        rows = self._build_report_rows(all_ages, seasons_list, pregnancy_rates_by_season_and_age)
+        rows_for_pregchecks_with_cows = self._build_report_rows(all_ages, seasons_list, pregnancy_rates_by_season_and_age)
+        rows_for_pregchecks_with_NO_cows = self._build_report_rows([None], seasons_list, pregnancy_rates_by_season_and_age_for_NO_cow_pregchecks)
 
         # Calculate totals row
-        totals_row = self._calculate_totals_row(all_ages, seasons_list, pregnancy_rates_by_season_and_age)
-        # breakpoint()
+        totals_row_for_pregchecks_with_cows = self._calculate_totals_row(all_ages, seasons_list, pregnancy_rates_by_season_and_age)
 
         context = {
             'seasons': seasons_list,
-            'rows': rows,
-            'totals': totals_row,
+            'rows': rows_for_pregchecks_with_cows,
+            'no_cow_rows': rows_for_pregchecks_with_NO_cows,
+            'totals': totals_row_for_pregchecks_with_cows,
+            'breeding_season': breeding_season
         }
         return render(request, 'preg_check/rolling-average-report.html', context)
 
@@ -743,8 +746,20 @@ class PregCheckRollingAverageReport(View):
         seasons_list = sorted(list(seasons), reverse=True)[:4]  # Get last 4 seasons
         seasons_list.sort()  # Sort ascending for display order
         return seasons_list
-    
-    def _calculate_pregnancy_rates_by_season_and_age(self, seasons_list):
+
+    def _calculate_pregnancy_rates_by_season_and_age_for_pregchecks_with_cows(self, seasons_list):
+        pregchecks = PregCheck.objects.exclude(
+            cow=None  # we do not want cowless pregchecks factored into the stats
+        ).select_related('cow').order_by('cow__ear_tag_id', '-check_date')
+        return self._calculate_pregnancy_rates_by_season_and_age(seasons_list, pregchecks)
+
+    def _calculate_pregnancy_rates_by_season_and_age_for_pregchecks_with_NO_cows(self, seasons_list):
+        pregchecks = PregCheck.objects.filter(
+            cow=None
+        ).order_by('-check_date')
+        return self._calculate_pregnancy_rates_by_season_and_age(seasons_list, pregchecks)
+
+    def _calculate_pregnancy_rates_by_season_and_age(self, seasons_list, pregchecks):
         """
         Calculate pregnancy rates by season and age.
         Returns dict: {season: {age: pregnancy_rate}}
@@ -755,10 +770,10 @@ class PregCheckRollingAverageReport(View):
             pregnancy_rates_by_season_and_age[season] = {}
             
             # Get all pregchecks for this season
-            season_pregchecks = PregCheck.objects.filter(
+            season_pregchecks = pregchecks.filter(
                 breeding_season=season
-            ).select_related('cow').order_by('cow__ear_tag_id', '-check_date')
-            
+            )
+
             # Group by cow to get last check only
             last_check_by_cow = {}
             for pc in season_pregchecks:
@@ -839,9 +854,7 @@ class PregCheckRollingAverageReport(View):
                 row['rolling_avg'] = f"{rolling_avg:.1f}%"
             else:
                 row['rolling_avg'] = "—"
-            
             rows.append(row)
-        
         return rows
     
     def _calculate_totals_row(self, all_ages: list, seasons_list: list, pregnancy_rates_by_season_and_age: dict):

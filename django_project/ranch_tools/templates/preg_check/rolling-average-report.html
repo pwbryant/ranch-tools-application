@@ -85,8 +85,11 @@
         <a href="{% url 'pregcheck-reports' %}" class="nav-button">← Back to Reports</a>
         <a href="/pregchecks" class="nav-button">← Back to Pregnancy Checks</a>
     </div>
-    
-    <h1>{{ breeding_season }} Season Rolling Average Report — Pregnancy Rate by Age Class</h1>
+    {% if breeding_season %}
+        <h1>{{ breeding_season }} Season Rolling Average Report — Pregnancy Rate by Age Class</h1>
+    {% else %}
+        <h1>Rolling Average Report — Pregnancy Rate by Age Class</h1>
+    {% endif %}        
     <p>Four-year rolling average pregnancy rates for each age class across the herd.</p>
 
     <form method="get" action="">
@@ -95,7 +98,7 @@
         <button type="submit">Update Breeding Season</button>
 
         <label for="low_threshold" style="margin-left: 20px;">Yellow threshold (<%):</label>
-        <input type="number" id="low_threshold" name="low_threshold" value="70" min="0" max="100" step="0.1"/>
+        <input type="number" id="low_threshold" name="low_threshold" value="80" min="0" max="100" step="0.1"/>
         
         <label for="high_threshold" style="margin-left: 30px;">Green threshold (>=%):</label>
         <input type="number" id="high_threshold" name="high_threshold" value="90" min="0" max="100" step="0.1"/>        

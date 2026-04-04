@@ -114,7 +114,7 @@ class PregCheckListView(ListView, InitialzeDatabaseMixin):
             pregcheck_form.fields['birth_year'].initial = birth_year
 
         ear_tag_id = self.request.GET.get('search_ear_tag_id', '')
-        rfid = self.request.GET.get('search_rfid', '')
+        rfid = self.request.GET.get('search_rfid')
         animals = get_matching_cows(ear_tag_id=ear_tag_id, rfid=rfid, birth_year=birth_year)
         animal_exists = animals.exists()
 
@@ -145,7 +145,7 @@ class PregCheckListView(ListView, InitialzeDatabaseMixin):
 
         search_form = AnimalSearchForm(
             initial={'search_ear_tag_id': ear_tag_id,
-                     'search_rfid': rfid,
+                     'search_rfid': '' if rfid is None else rfid,
                      'search_birth_year': birth_year
             },
             birth_year_choices=[(y, str(y),) for y in distinct_birth_years]
@@ -294,7 +294,6 @@ class PregCheckSummaryStatsView(View):
 class CowCreateUpdateView(FormView):
     form_class = CowForm
     template_name = 'preg_check/includes/no_animal_modal.html'
-    # success_url = reverse('pregcheck-list')
 
     def get_success_url(self):
         cow = self.object
@@ -683,6 +682,8 @@ class PregCheckRollingAverageReport(View):
     def get(self, request, *args, **kwargs):
         """Orchestrate the rolling average report generation."""
         breeding_season = request.GET.get('breeding_season')
+        if not breeding_season:
+            breeding_season = CurrentBreedingSeason.breeding_season
         
         # Get breeding seasons
         seasons_list = self._get_breeding_seasons(breeding_season)
@@ -720,6 +721,9 @@ class PregCheckRollingAverageReport(View):
             'breeding_season': breeding_season
         }
         return render(request, 'preg_check/rolling-average-report.html', context)
+
+
+    # def _breeding_season(self):
 
     def _get_breeding_seasons(self, breeding_season=None):
         """

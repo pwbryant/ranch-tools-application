@@ -11,6 +11,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     clearBirthYearWhenSearchIdChanges();
 
+    function clearSearchForm() {
+        document.getElementById('clear-search-form').addEventListener('click', function() {
+            location.href = pregchecksUrl;
+        });
+    }
+
     // Function for handling Edit Cow Modal
     function handleEditCowModal() {
         var modal = document.getElementById("editCowModal");
@@ -658,5 +664,6 @@ document.addEventListener('DOMContentLoaded', function() {
     handleCreateAnimal();
     handleEditCowModal();
     handleCreateCowModal();
+    clearSearchForm();
 });
 

@@ -69,9 +69,15 @@ class CowForm(forms.ModelForm):
     birth_year = forms.CharField(
         label='Birth Year (optional)',
         max_length=4,
-        required=False,
+        required=True,
         widget=forms.TextInput(attrs={'placeholder': 'YYYY'})
     )
+
+    def clean_eid(self):
+        eid = self.cleaned_data.get('eid')
+        if eid == '':
+            return None
+        return eid
 
 
 class EditPregCheckForm(forms.ModelForm):
@@ -98,7 +104,6 @@ class EditPregCheckForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        # breakpoint()
         if self.errors:
             return cleaned_data
 
@@ -128,7 +133,7 @@ class EditPregCheckForm(forms.ModelForm):
         birth_year = self.cleaned_data.get('birth_year')
         new_cow = self.cleaned_data.get('new_cow', False)
         
-        if ear_tag_id:
+        if ear_tag_id and birth_year:
             try:
                 cow = Cow.objects.get(ear_tag_id=ear_tag_id, birth_year=birth_year)
                 preg_check.cow = cow

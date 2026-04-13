@@ -262,7 +262,6 @@ class PregCheckSummaryStatsView(View):
         if not stats_breeding_season:
             return HttpResponseBadRequest("stats_breeding_season parameter is required.")
 
-        # all_checks = PregCheck.latest_objects.filter(breeding_season=stats_breeding_season).latest_per_cow()
         # with cow checks
         checks_with_cows = PregCheck.latest_objects.filter(breeding_season=stats_breeding_season).latest_per_cow()
 
@@ -473,14 +472,9 @@ class PregCheckReportFive(View):
             if row:
                 rows.append(row)
 
-        all_pregchecks_with_NO_cow_initial = all_pregchecks_with_NO_cow.filter(recheck=False)
-        all_pregchecks_with_NO_cow_recheck = all_pregchecks_with_NO_cow.filter(recheck=True)
+        no_cow_row = self.create_no_cow_preg_check_row(all_pregchecks_with_NO_cow)
 
-        no_cow_row = self.create_preg_checks_row(all_pregchecks_with_NO_cow_initial, all_pregchecks_with_NO_cow_recheck)
-        if no_cow_row: 
-            rows.append(no_cow_row)
-
-        totals_row = self.create_preg_checks_row(all_breeding_season_cows.filter(recheck=False), all_breeding_season_cows.filter(recheck=True))
+        totals_row = self.create_preg_checks_row(all_pregchecks_with_cow_initial, all_pregchecks_with_cow_recheck)
 
         totals_row['cow_birth_year'] = 'TOTALS'
         totals_row['is_totals'] = True
@@ -488,8 +482,23 @@ class PregCheckReportFive(View):
             'breeding_season': breeding_season,
             'rows': rows,
             'totals': totals_row,
+            'no_cow_row': no_cow_row
         }
         return render(request, 'preg_check/report-5.html', context)
+
+    def create_no_cow_preg_check_row(self, no_cow_preg_checks):
+        open_count = no_cow_preg_checks.filter(is_pregnant=False).count()
+        pregnant_count = no_cow_preg_checks.filter(is_pregnant=True).count()
+        herd_size = open_count + pregnant_count
+        if herd_size == 0:
+            pct_pregnant = 0
+        else:
+            pct_pregnant = pregnant_count / herd_size * 100 
+        return {
+            'net_open': open_count, 
+            'net_pregnant': pregnant_count,
+            'pct_pregnant': f"{pct_pregnant:.1f}%",
+        }
 
     def create_preg_checks_row(self, preg_checks_initial, preg_checks_recheck, age=None, birth_year=None):
         first_pass_open_count = preg_checks_initial.filter(is_pregnant=False).count()

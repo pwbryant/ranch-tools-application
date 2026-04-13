@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import OuterRef, Subquery
 from django.utils import timezone
 
 
@@ -57,7 +58,43 @@ class Cow(models.Model):
         unique_together = [['ear_tag_id', 'birth_year']]
 
 
+class LatestPregCheckQuerySet(models.QuerySet):
+    """Custom QuerySet for PregCheck filtering."""
+
+    def latest_per_cow(self):
+        """
+        Return only the latest PregCheck per cow based on check_date.
+        Excludes PregChecks where cow is None.
+        Uses check_date (descending) and id (descending) as tiebreaker.
+        """
+        # Exclude pregchecks without an associated cow
+        qs = self.exclude(cow=None)
+
+        # Get the id of the latest check for each cow
+        latest_ids = PregCheck.objects.filter(
+            cow=OuterRef('cow'),
+            cow__isnull=False
+        ).order_by('-check_date', '-id').values('id')[:1]
+
+        # Return only those PregChecks
+        return qs.filter(id__in=Subquery(latest_ids))
+
+
+class LatestPregCheckManager(models.Manager):
+    """Custom manager for PregCheck model."""
+
+    def get_queryset(self):
+        return LatestPregCheckQuerySet(self.model, using=self._db)
+
+    def latest_per_cow(self):
+        """Convenience method to get latest per cow."""
+        return self.get_queryset().latest_per_cow()
+
+
 class PregCheck(models.Model):
+    objects = models.Manager()  # Default manager
+    latest_objects = LatestPregCheckManager()  # Custom manager
+
     def save(self, *args, **kwargs):
         if self.recheck and self.cow:
             previous = PregCheck.objects.filter(

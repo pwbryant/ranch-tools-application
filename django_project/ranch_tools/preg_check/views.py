@@ -262,31 +262,56 @@ class PregCheckSummaryStatsView(View):
         if not stats_breeding_season:
             return HttpResponseBadRequest("stats_breeding_season parameter is required.")
 
-        all_checks = PregCheck.objects.filter(breeding_season=stats_breeding_season)
-        total_pregnant_count = all_checks.filter(is_pregnant=True).count()
-        all_opens_count = all_checks.filter(is_pregnant=False).count()
+        # all_checks = PregCheck.latest_objects.filter(breeding_season=stats_breeding_season).latest_per_cow()
+        # with cow checks
+        checks_with_cows = PregCheck.latest_objects.filter(breeding_season=stats_breeding_season).latest_per_cow()
 
-        rechecks = all_checks.filter(recheck=True)
-        preg_rechecks_count = rechecks.filter(is_pregnant=True).count()
-        open_rechecks_count = rechecks.filter(is_pregnant=False).count()
+        total_pregnant_count = checks_with_cows.filter(is_pregnant=True).count()
+        total_opens_count = checks_with_cows.filter(is_pregnant=False).count()
+        total_count = total_pregnant_count + total_opens_count
 
-        first_pass_pregs_count = total_pregnant_count - preg_rechecks_count
-        first_pass_open_count = all_opens_count - open_rechecks_count
-
-        total_open_count = first_pass_open_count - preg_rechecks_count
-        total_count = total_open_count + total_pregnant_count
         pregnancy_rate = (total_pregnant_count / total_count) * 100 if total_count > 0 else 0
 
+        checks_without_cows = PregCheck.objects.filter(cow=None, breeding_season=stats_breeding_season)
+        total_no_cow_pregnant_count = checks_without_cows.filter(is_pregnant=True).count()
+        total_no_cow_opens_count = checks_without_cows.filter(is_pregnant=False).count()
+        total_no_cow_count = total_no_cow_pregnant_count + total_no_cow_opens_count
+
+        no_cow_pregnancy_rate = (total_no_cow_pregnant_count / total_no_cow_count) * 100 if total_no_cow_count > 0 else 0
+
+        
+        # without cow checks
+        # checks_without_cows = all_checks.filter(cow=None)
+
+        # total_pregnant_count = all_checks.filter(is_pregnant=True).count()
+        # all_opens_count = all_checks.filter(is_pregnant=False).count()
+
+        # rechecks = all_checks.filter(recheck=True)
+        # preg_rechecks_count = rechecks.filter(is_pregnant=True).count()
+        # open_rechecks_count = rechecks.filter(is_pregnant=False).count()
+
+        # first_pass_pregs_count = total_pregnant_count - preg_rechecks_count
+        # first_pass_open_count = all_opens_count - open_rechecks_count
+
+        # total_open_count = first_pass_open_count - preg_rechecks_count
+        # total_count = total_open_count + total_pregnant_count
+        # pregnancy_rate = (total_pregnant_count / total_count) * 100 if total_count > 0 else 0
+
         summary_stats = {
-            'first_check_pregnant': first_pass_pregs_count,
-            'recheck_pregnant': preg_rechecks_count,
+            # 'first_check_pregnant': first_pass_pregs_count,
+            # 'recheck_pregnant': preg_rechecks_count,
             'total_pregnant': total_pregnant_count,
-            'first_check_open': first_pass_open_count,
-            'less_recheck_pregnant': preg_rechecks_count,
-            'total_open': total_open_count,
+            # 'first_check_open': first_pass_open_count,
+            # 'less_recheck_pregnant': preg_rechecks_count,
+            'total_open': total_opens_count,
             'total_count': total_count,
-            'pregnancy_rate': pregnancy_rate
-	}
+            'pregnancy_rate': pregnancy_rate,
+
+            'total_no_cow_pregnant_count': total_no_cow_pregnant_count,
+            'total_no_cow_opens_count': total_no_cow_opens_count,
+            'total_no_cow_count': total_no_cow_count,
+            'no_cow_pregnancy_rate': no_cow_pregnancy_rate,
+    	}
 
         return JsonResponse(summary_stats)
 

@@ -204,14 +204,15 @@ document.addEventListener('DOMContentLoaded', function() {
     
                     // Populate stats content
                     entriesContainer.innerHTML = `
-                        <p>Pregnant at 1st check: ${data.first_check_pregnant}</p>
-                        <p>Recheck Pregnant: ${data.recheck_pregnant}</p>
                         <p><b>Total Pregnant: ${data.total_pregnant}</b></p>
-                        <p>Open at 1st check: ${data.first_check_open}</p>
-                        <p>Less recheck pregnant: -${data.recheck_pregnant}</p>
                         <p><b>Total Open: ${data.total_open}</b></p>
                         <p><b>Total Count: ${data.total_count}</b></p>
                         <p><b>Pregnancy Rate: ${data.pregnancy_rate.toFixed(2)}%</b></p>
+                        <hr>
+                        <p><b>Unknown Cow: Total Pregnant: ${data.total_no_cow_pregnant_count}</b></p>
+                        <p><b>Unknown Cow: Total Open: ${data.total_no_cow_opens_count}</b></p>
+                        <p><b>Unknown Cow: Total Count: ${data.total_no_cow_count}</b></p>
+                        <p><b>Unknown Cow: Pregnancy Rate: ${data.no_cow_pregnancy_rate.toFixed(2)}%</b></p>
                     `;
                 })
                 .catch(error => {

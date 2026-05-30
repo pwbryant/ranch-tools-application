@@ -717,7 +717,7 @@ class PregCheckRollingAverageReport(View):
         """Orchestrate the rolling average report generation."""
         breeding_season = request.GET.get('breeding_season')
         if not breeding_season:
-            breeding_season = CurrentBreedingSeason.breeding_season
+            breeding_season = CurrentBreedingSeason.load().breeding_season
         
         # Get breeding seasons
         seasons_list = self._get_breeding_seasons(breeding_season)
@@ -765,7 +765,7 @@ class PregCheckRollingAverageReport(View):
         Returns list of up to 4 most recent seasons, sorted ascending.
         """
         if not breeding_season:
-            breeding_season = CurrentBreedingSeason.breeding_season
+            breeding_season = CurrentBreedingSeason.load().breeding_season
            
         if not isinstance(breeding_season, (int, str)):
             breeding_season = PregCheck.objects.aggregate(

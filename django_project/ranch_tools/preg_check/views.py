@@ -278,24 +278,6 @@ class PregCheckSummaryStatsView(View):
 
         no_cow_pregnancy_rate = (total_no_cow_pregnant_count / total_no_cow_count) * 100 if total_no_cow_count > 0 else 0
 
-        
-        # without cow checks
-        # checks_without_cows = all_checks.filter(cow=None)
-
-        # total_pregnant_count = all_checks.filter(is_pregnant=True).count()
-        # all_opens_count = all_checks.filter(is_pregnant=False).count()
-
-        # rechecks = all_checks.filter(recheck=True)
-        # preg_rechecks_count = rechecks.filter(is_pregnant=True).count()
-        # open_rechecks_count = rechecks.filter(is_pregnant=False).count()
-
-        # first_pass_pregs_count = total_pregnant_count - preg_rechecks_count
-        # first_pass_open_count = all_opens_count - open_rechecks_count
-
-        # total_open_count = first_pass_open_count - preg_rechecks_count
-        # total_count = total_open_count + total_pregnant_count
-        # pregnancy_rate = (total_pregnant_count / total_count) * 100 if total_count > 0 else 0
-
         summary_stats = {
             # 'first_check_pregnant': first_pass_pregs_count,
             # 'recheck_pregnant': preg_rechecks_count,
@@ -429,6 +411,21 @@ class CowExistsView(View):
             return JsonResponse({'error': 'check_existing_ear_tag_id parameter is required'}, status=400)
 
 
+def pregcheck_info_by_cow(pgs) -> dict:
+    d = {}
+    for pg in pgs.order_by('-check_date'):
+        key = f'{pg.cow.ear_tag_id}-{pg.cow.birth_year}'
+        if key not in d:
+            d[key] = {
+                'latest_pregcheck': pg,
+                'previous_pregchecks': []
+            }
+        else:
+            d[key]['previous_pregchecks'].append(pg)
+
+    return d
+
+
 class PregCheckReportFive(View):
     """Simple view to render Report Five page"""
 
@@ -466,15 +463,15 @@ class PregCheckReportFive(View):
         rows = []
         for age in cow_ages:
             birth_year = breeding_season - age
-            age_pregchecks_initial = all_pregchecks_with_cow_initial.filter(cow_age=age)
-            age_pregchecks_recheck = all_pregchecks_with_cow_recheck.filter(cow_age=age)
-            row = self.create_preg_checks_row(age_pregchecks_initial, age_pregchecks_recheck, age=age, birth_year=birth_year)
+            age_pregchecks = all_pregchecks_with_cow.filter(cow_age=age)
+            row = self.create_preg_checks_row(age_pregchecks, age=age, birth_year=birth_year)
             if row:
                 rows.append(row)
 
+
         no_cow_row = self.create_no_cow_preg_check_row(all_pregchecks_with_NO_cow)
 
-        totals_row = self.create_preg_checks_row(all_pregchecks_with_cow_initial, all_pregchecks_with_cow_recheck)
+        totals_row = self.create_preg_checks_row(all_pregchecks_with_cow)
 
         totals_row['cow_birth_year'] = 'TOTALS'
         totals_row['is_totals'] = True
@@ -484,6 +481,7 @@ class PregCheckReportFive(View):
             'totals': totals_row,
             'no_cow_row': no_cow_row
         }
+
         return render(request, 'preg_check/report-5.html', context)
 
     def create_no_cow_preg_check_row(self, no_cow_preg_checks):
@@ -500,66 +498,72 @@ class PregCheckReportFive(View):
             'pct_pregnant': f"{pct_pregnant:.1f}%",
         }
 
-    def create_preg_checks_row(self, preg_checks_initial, preg_checks_recheck, age=None, birth_year=None):
-        first_pass_open_count = preg_checks_initial.filter(is_pregnant=False).count()
-        first_pass_pregnant_count = preg_checks_initial.filter(is_pregnant=True).count()
-        first_pass_total = preg_checks_initial.count()
+    def create_preg_checks_row(self, preg_checks, age=None, birth_year=None):
 
-        net_open_count = first_pass_open_count
-        net_pregnant_count = first_pass_pregnant_count
+        cow_pregcheck_info_dict = pregcheck_info_by_cow(preg_checks)
 
-        recheck_preg_count, recheck_open_count = self.get_recheck_counts(preg_checks_recheck, preg_checks_initial)
+        first_pass_open_count = 0
+        first_pass_pregnant_count = 0
+        for cow_id in cow_pregcheck_info_dict:
+            cow_dict = cow_pregcheck_info_dict[cow_id]
+            if cow_dict['previous_pregchecks']:
+                first_cow = cow_dict['previous_pregchecks'][-1]  # sorted by reverse check_date
+            else:
+                first_cow = cow_dict['latest_pregcheck']
 
-        net_open_count -= recheck_preg_count
-        net_open_count += recheck_open_count
-        net_pregnant_count += recheck_preg_count
-        net_pregnant_count -= recheck_open_count
+            if first_cow.is_pregnant:
+                first_pass_pregnant_count += 1
+            else:
+                first_pass_open_count += 1
 
-        herd_size = preg_checks_initial.count()
-        if herd_size == 0:
-            pct_pregnant = 0
-        else:
-            pct_pregnant = net_pregnant_count / herd_size * 100 
+        preg_recheck_count = first_pass_pregnant_count
+        open_recheck_count = first_pass_open_count
+        for cow_id in cow_pregcheck_info_dict:
+            cow_dict = cow_pregcheck_info_dict[cow_id]
+            if cow_dict['previous_pregchecks']:
+                latest_pregcheck = cow_dict['latest_pregcheck']
+                previous_pregcheck = cow_dict['previous_pregchecks'][0]
+
+                latest_cow_pregnant = latest_pregcheck.is_pregnant is True
+                latest_cow_open = latest_pregcheck.is_pregnant is False
+                previous_cow_pregnant = previous_pregcheck.is_pregnant is True
+                previous_cow_open = previous_pregcheck.is_pregnant is False
+
+                # if previous cow is open and latest cow is open then it is assumed
+                # it is an unecessary recheck and nothing new is counted
+
+                # if previous is open but latest is pregnant then update counts
+                if previous_cow_open and latest_cow_pregnant:
+                    open_recheck_count -= 1
+                    preg_recheck_count += 1
+
+                # if previous preg but latest is open, then assume a mistake was made on the initial
+                # check and update the first pass counts
+                if previous_cow_pregnant and latest_cow_open:
+                    first_pass_open_count += 1
+                    first_pass_pregnant_count -= 1
+
+                    open_recheck_count += 1
+                    preg_recheck_count -= 1
+
+        first_pass_total = first_pass_open_count + first_pass_pregnant_count
+        recheck_total = open_recheck_count + preg_recheck_count
+
+        herd_size = len(cow_pregcheck_info_dict) # key for each unique cow
+        
+        pct_pregnant = preg_recheck_count / herd_size * 100
+
         return {
             'cow_birth_year': birth_year,
             'age': age,
             'first_pass_open': first_pass_open_count,
             'first_pass_pregnant': first_pass_pregnant_count,
             'first_pass_total': first_pass_total,
-            'preg_recheck_count': recheck_preg_count,
-            'net_open': net_open_count, # if recheck, the recheck cow is used
-            'net_pregnant': net_pregnant_count,
+            'recheck_open': open_recheck_count,
+            'recheck_pregnant': preg_recheck_count, # if recheck, the recheck cow is used
+            'recheck_total': recheck_total,
             'pct_pregnant': f"{pct_pregnant:.1f}%",
         }
-
-    def get_recheck_counts(self, recheck_preg_checks, initial_preg_checks):
-        preg_count = 0
-        open_count = 0
-        recheck_cows = recheck_preg_checks.exclude(cow=None).values_list('cow', flat=True).distinct()
-        for recheck_cow in recheck_cows:
-            recheck_pregcheck = recheck_preg_checks.filter(cow=recheck_cow).last() # default to last preg check for preg value
-            try:
-                initial_pregcheck = initial_preg_checks.get(cow=recheck_cow)
-            except:
-                print(recheck_cow)
-                class MockPG:
-                    is_pregnant = False
-                initial_pregcheck = MockPG                
-                
-            initial_open = initial_pregcheck.is_pregnant == False
-            initial_pregnant = initial_pregcheck.is_pregnant == True
-            recheck_open = recheck_pregcheck.is_pregnant == False
-            recheck_pregnant = recheck_pregcheck.is_pregnant == True
-        
-            if initial_open and recheck_pregnant:
-                preg_count += 1
-        
-            if initial_pregnant and recheck_open:
-                open_count += 1
-                print('WIERD')
-
-        return preg_count, open_count
-
 
     def xxxget(self, request, *args, **kwargs):
         # Allow overriding breeding season via query param
@@ -944,7 +948,7 @@ class ReportsHubView(View):
     def get(self, request, *args, **kwargs):
         reports = [
             {
-                'name': 'Report Five — Summary by Birth Year',
+                'name': 'Summary by Birth Year',
                 'url': 'pregcheck-report-5',
                 'description': 'Detailed breakdown of pregnancy status by cow birth year/age class for the selected breeding season.'
             },

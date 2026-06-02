@@ -1,4 +1,6 @@
 import csv
+from datetime import datetime
+
 from django.test import TestCase, Client
 from django.urls import reverse
 
@@ -23,7 +25,7 @@ class ReportFiveFromCSVTest(TestCase):
                 birth_year_val = int(birth_year) if birth_year and birth_year != '' else None
                 is_pregnant = row['is_pregnant'].strip().lower() == 'true'
                 recheck = row['recheck'].strip().lower() == 'true'
-
+                check_date = datetime.strptime(row['check_date'], '%Y-%m-%d')
                 cow = None
                 if ear:
                     cow, _ = Cow.objects.get_or_create(ear_tag_id=ear, defaults={'birth_year': birth_year_val})
@@ -36,7 +38,8 @@ class ReportFiveFromCSVTest(TestCase):
                     breeding_season=season,
                     cow=cow,
                     is_pregnant=is_pregnant,
-                    recheck=recheck
+                    recheck=recheck,
+                    check_date=check_date,
                 )
 
         # Request report for 2025
@@ -50,7 +53,7 @@ class ReportFiveFromCSVTest(TestCase):
         row_1 = response.context['rows'][0]
         self.assertEqual(row_1['first_pass_open'], 2)
         # preg_recheck_count should be 1 (cow A has a recheck)
-        self.assertEqual(row_1['preg_recheck_count'], 1)
+        self.assertEqual(row_1['recheck_pregnant'], 1)
         # pct_pregnant should be 50.0%
         self.assertIn('50.0%', content)
 

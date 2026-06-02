@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>Report Five</title>
+    <title>Summary By Birth Year</title>
     <style>
         .green-bg {
             background-color: #90EE90;
@@ -41,9 +41,9 @@
                 <th>First Pass Open</th>
                 <th>First Pass Pregnant</th>
                 <th>First Pass Total</th>
-                <th>Preg Recheck Count</th>
-                <th>Net Open</th>
-                <th>Net Pregnant</th>
+                <th>After Recheck Open</th>
+                <th>After Recheck Pregnant</th>
+                <th>After Recheck Total</th>
                 <th>% Pregnant</th>
             </tr>
         </thead>
@@ -55,9 +55,9 @@
                 <td>{{ row.first_pass_open }}</td>
                 <td>{{ row.first_pass_pregnant }}</td>
                 <td>{{ row.first_pass_total }}</td>
-                <td>{{ row.preg_recheck_count }}</td>
-                <td>{{ row.net_open }}</td>
-                <td>{{ row.net_pregnant }}</td>
+                <td>{{ row.recheck_open }}</td>
+                <td>{{ row.recheck_pregnant }}</td>
+                <td>{{ row.recheck_total }}</td>
                 <td 
                     class="pct-cell"
                     {% with pct_value=row.pct_pregnant|slice:":-1"|floatformat:0 %}
@@ -75,9 +75,9 @@
                 <td>{{ totals.first_pass_open }}</td>
                 <td>{{ totals.first_pass_pregnant }}</td>
                 <td>{{ totals.first_pass_total }}</td>
-                <td>{{ totals.preg_recheck_count }}</td>
-                <td>{{ totals.net_open }}</td>
-                <td>{{ totals.net_pregnant }}</td>
+                <td>{{ totals.recheck_open }}</td>
+                <td>{{ totals.recheck_pregnant }}</td>
+                <td>{{ totals.recheck_total }}</td>
                 <td 
                     class="pct-cell"
                     {% with pct_value=totals.pct_pregnant|slice:":-1"|floatformat:0 %}

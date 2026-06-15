@@ -283,6 +283,30 @@ ul {
 
 #stats-entries {
     padding: 10px;
-    background-color: #f0f0f0;
     border-radius: 5px;
 }
+
+#stats-entries table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+#stats-entries th, 
+#stats-entries td {
+    border: 1px solid black;
+    padding: 6px 10px;
+    text-align: left;
+}
+
+#previous-pregcheck-content table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+#previous-pregcheck-content th,
+#previous-pregcheck-content td {
+    border: 1px solid black;
+    padding: 6px 10px;
+    text-align: left;
+}
+

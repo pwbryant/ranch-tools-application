@@ -10,3 +10,4 @@ pytest.ini
 local/
 *.ipynb
 **/*.ipynb
+.envrc

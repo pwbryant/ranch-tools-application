@@ -21,10 +21,17 @@
         <input type="text" id="breeding-season-input" placeholder="YYYY" maxlength="4" pattern="\d{4}" title="Enter a 4-digit year" value="{{ current_breeding_season }}">
     </div>
     <div class="content-row">
-        {% include 'preg_check/includes/stats_content.html' %}
-        {% include 'preg_check/includes/previous_pregcheck_list.html' %}
+        <div>
+            {% include 'preg_check/includes/stats_content.html' %}
+            {% include 'preg_check/includes/previous_pregcheck_list.html' %}
+        </div>
         {% include 'preg_check/includes/search_form.html' %}
         {% include 'preg_check/includes/pregcheck_form.html' %}
+    </div>
+
+    {% include 'preg_check/includes/results_container.html' %}
+
+    <div>
         {% include 'preg_check/includes/message_modal.html' %}
         {% include 'preg_check/includes/no_animal_modal.html' %}
         {% include 'preg_check/includes/no_animal_rfid_modal.html' %}

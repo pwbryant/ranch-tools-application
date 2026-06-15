@@ -277,13 +277,8 @@ class PregCheckSummaryStatsView(View):
         no_cow_pregnancy_rate = (total_no_cow_pregnant_count / total_no_cow_count) * 100 if total_no_cow_count > 0 else 0
 
         summary_stats = {
-            'total_pregnant': pregnancy_info['recheck_pregnant'],
-            'total_open': pregnancy_info['recheck_open'],
             'total_count': pregnancy_info['recheck_open'] + pregnancy_info['recheck_pregnant'],
             'pregnancy_rate': pregnancy_rate,
-
-            'total_no_cow_pregnant_count': total_no_cow_pregnant_count,
-            'total_no_cow_opens_count': total_no_cow_opens_count,
             'total_no_cow_count': total_no_cow_count,
             'no_cow_pregnancy_rate': no_cow_pregnancy_rate,
     	}

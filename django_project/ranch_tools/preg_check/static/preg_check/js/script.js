@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 headerText.textContent = 'Previous Pregchecks';
                 headerContainer.appendChild(headerText);
 
-                // Create a container for the pregcheck entries
+                // Create a table for the pregcheck entries
                 const entriesContainer = document.createElement('div');
                 entriesContainer.id = 'pregcheck-entries';
                 content.appendChild(entriesContainer);
@@ -110,24 +110,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     headerText.textContent = isVisible ? 'Previous Pregchecks' : 'Previous Pregchecks';
                 };
 
-                data.pregchecks.forEach((p, index) => {
-                    let entryBox = document.createElement('div');
-                    entryBox.className = 'entry-box';
-                    entryBox.innerHTML = `
-                        <div class="entry-item"><strong>Ear Tag ID:</strong> ${p.ear_tag_id}</div>
-                        <div class="entry-item"><strong>Pregnant:</strong> ${p.is_pregnant ? 'Yes' : 'No'}</div>
+                const table = document.createElement('table');
+                const thead = document.createElement('thead');
+                thead.innerHTML = '<tr><th>Cow ID</th><th>Birth Year</th><th>Pregnant</th></tr>';
+                table.appendChild(thead);
+
+                const tbody = document.createElement('tbody');
+                data.pregchecks.forEach((p) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${p.ear_tag_id}</td>
+                        <td>${p.birth_year}</td>
+                        <td>${p.is_pregnant ? 'Yes' : 'No'}</td>
                     `;
-                    
-                    // Alternating background color
-                    entryBox.classList.add(index % 2 === 0 ? 'entry-box-even' : 'entry-box-odd');
-                    
-                    // Hover effects and click functionality
-                    entryBox.style.cursor = 'pointer';
-                    // entryBox.onclick = () => populatePregcheckForm(p);
-                    entryBox.onclick = () => populateEditModal(p);
-                    
-                    entriesContainer.appendChild(entryBox);
+                    row.style.cursor = 'pointer';
+                    row.onclick = () => populateEditModal(p);
+                    tbody.appendChild(row);
                 });
+                table.appendChild(tbody);
+                entriesContainer.appendChild(table);
             })
             .catch(error => {
                 const errMsg = 'Error fetching previous pregchecks';
@@ -135,32 +136,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 content.innerHTML = errMsg;
             });
     }
-
-    // function populatePregcheckForm(pregcheckData) {
-    //     // Populate text inputs
-    //     console.log('populate pregcheck form funk')
-    //     if (isRFId(pregcheckData.cow_id)) {
-    //         document.getElementById('id_pregcheck_rfid').value = pregcheckData.cow_id;
-    //     } else {
-    //         document.getElementById('id_pregcheck_ear_tag_id').value = pregcheckData.cow_id;
-    //     }
-
-    //     document.getElementById('id_birth_year').value = pregcheckData.birth_year;
-    //     document.getElementById('breeding_season').value = pregcheckData.breeding_season;
-    //     document.getElementById('id_comments').value = pregcheckData.comments;
-
-    //     // Set radio button for pregnancy status
-    //     const isPregnantRadio = document.getElementById(pregcheckData.is_pregnant ? 'id_is_pregnant_0' : 'id_is_pregnant_1');
-    //     if (isPregnantRadio) {
-    //         isPregnantRadio.checked = true;
-    //     }
-
-    //     // Set checkbox for recheck
-    //     document.getElementById('id_recheck').checked = pregcheckData.is_recheck;
-
-    //     // Optionally, scroll to the form
-    //     document.getElementById('pregcheck-form').scrollIntoView({ behavior: 'smooth' });
-    // }
 
     function updateStats() {
         const content = document.getElementById('stats-content');
@@ -204,15 +179,27 @@ document.addEventListener('DOMContentLoaded', function() {
     
                     // Populate stats content
                     entriesContainer.innerHTML = `
-                        <p><b>Total Pregnant: ${data.total_pregnant}</b></p>
-                        <p><b>Total Open: ${data.total_open}</b></p>
-                        <p><b>Total Count: ${data.total_count}</b></p>
-                        <p><b>Pregnancy Rate: ${data.pregnancy_rate.toFixed(2)}%</b></p>
-                        <hr>
-                        <p><b>Unknown Cow: Total Pregnant: ${data.total_no_cow_pregnant_count}</b></p>
-                        <p><b>Unknown Cow: Total Open: ${data.total_no_cow_opens_count}</b></p>
-                        <p><b>Unknown Cow: Total Count: ${data.total_no_cow_count}</b></p>
-                        <p><b>Unknown Cow: Pregnancy Rate: ${data.no_cow_pregnancy_rate.toFixed(2)}%</b></p>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Group</th>
+                                    <th>Number</th>
+                                    <th>Pregnancy %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>With ID</td>
+                                    <td>${data.total_count}</td>
+                                    <td>${data.pregnancy_rate.toFixed(2)}</td>
+                                </tr>
+                                <tr>
+                                    <td>Without ID</td>
+                                    <td>${data.total_no_cow_count}</td>
+                                    <td>${data.no_cow_pregnancy_rate.toFixed(2)}</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     `;
                 })
                 .catch(error => {

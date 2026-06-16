@@ -1,474 +1,277 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Database Management - Ranch Tools</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            margin: 0;
-            padding: 20px;
-            min-height: 100vh;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            overflow: hidden;
-            position: relative;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .content {
-            padding: 30px;
-        }
-        
-        .card {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 10px;
-            padding: 25px;
-            margin-bottom: 20px;
-        }
-        
-        .card h3 {
-            margin-top: 0;
-            color: #495057;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
-        }
-        
-        .upload-area {
-            border: 2px dashed #667eea;
-            border-radius: 10px;
-            padding: 40px;
-            text-align: center;
-            background: #f8f9ff;
-            transition: all 0.3s ease;
-        }
-        
-        .upload-area:hover {
-            border-color: #764ba2;
-            background: #f0f2ff;
-        }
-        
-        .file-input {
-            display: none;
-        }
-        
-        .nav-btn {
-            display: inline-block;
-            position: absolute;
-            top: 30px;
-            left: 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 10px 22px;
-            border-radius: 25px;
-            font-size: 16px;
-            text-decoration: none;
-            font-weight: 500;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
-            transition: all 0.3s ease;
-            z-index: 10;
-        }
+{% extends 'base.html' %}
 
-        .nav-btn:hover {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.3);
-        }
+{% block title %}Database Management{% endblock %}
 
-        .upload-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 25px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 10px;
-        }
-        
-        .upload-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn-secondary {
-            background: #6c757d;
-        }
-        
-        .btn-secondary:hover {
-            background: #545b62;
-            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
-        }
-        
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        
-        .info-item {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #667eea;
-        }
-        
-        .info-label {
-            font-weight: bold;
-            color: #495057;
-            font-size: 12px;
-            text-transform: uppercase;
-            margin-bottom: 5px;
-        }
-        
-        .info-value {
-            font-size: 18px;
-            color: #667eea;
-        }
-        
-        .messages {
-            margin-bottom: 20px;
-        }
-        
-        .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-        }
-        
-        .alert-success {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-        
-        .alert-error {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-        
-        .warning {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        
-        #fileName {
-            margin-top: 10px;
-            font-weight: bold;
-            color: #667eea;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <a class="nav-btn" href="/pregchecks">← Go to Preg Checks</a>
-        <div class="header">
-            <h1>Database Management</h1>
-            <p>Upload and manage your Ranch Tools database files</p>
+{% block content %}
+
+<div class="mb-4 pb-3 border-bottom">
+    <h4 class="fw-semibold mb-1">Database Management</h4>
+    <p class="text-muted mb-0">Upload, back up, and manage Ranch Tools database files.</p>
+</div>
+
+{% if messages %}
+<div class="mb-4">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
-        
-        <div class="content">
-            <!-- Django Messages -->
-            {% if messages %}
-            <div class="messages">
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-            
-            <!-- Current Database Info -->
-            <div class="card">
-                <h3>Current Database</h3>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <div class="info-label">Database File</div>
-                        <div class="info-value">{{ current_db }}</div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="row g-4">
+
+    <!-- Current database info -->
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header fw-semibold">Current Database</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-auto">
+                        <div class="border rounded p-3" style="border-left: 4px solid #0d6efd !important;">
+                            <div class="text-muted small text-uppercase fw-semibold mb-1">Database File</div>
+                            <div class="fw-semibold">{{ current_db }}</div>
+                        </div>
                     </div>
                     {% if db_info.table_count %}
-                    <div class="info-item">
-                        <div class="info-label">Tables</div>
-                        <div class="info-value">{{ db_info.table_count }}</div>
+                    <div class="col-auto">
+                        <div class="border rounded p-3" style="border-left: 4px solid #0d6efd !important;">
+                            <div class="text-muted small text-uppercase fw-semibold mb-1">Tables</div>
+                            <div class="fw-semibold">{{ db_info.table_count }}</div>
+                        </div>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label">Size</div>
-                        <div class="info-value">{{ db_info.size_mb }} MB</div>
+                    <div class="col-auto">
+                        <div class="border rounded p-3" style="border-left: 4px solid #0d6efd !important;">
+                            <div class="text-muted small text-uppercase fw-semibold mb-1">Size</div>
+                            <div class="fw-semibold">{{ db_info.size_mb }} MB</div>
+                        </div>
                     </div>
                     {% endif %}
                 </div>
-                
                 {% if db_info.sample_tables %}
-                <p><strong>Sample tables:</strong> {{ db_info.sample_tables|join:", " }}</p>
+                <p class="mt-3 mb-0 small text-muted">
+                    <strong>Sample tables:</strong> {{ db_info.sample_tables|join:", " }}
+                </p>
                 {% endif %}
             </div>
+        </div>
+    </div>
 
-            <!-- Backup Current Database -->
-            <div class="card">
-                <h3>Backup Current Database</h3>
-                <p>Create a backup copy of your current database for safekeeping.</p>
-                
+    <!-- Backup -->
+    <div class="col-12 col-md-6">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Backup Current Database</div>
+            <div class="card-body">
+                <p class="text-muted small">Create a backup copy of your current database for safekeeping.</p>
                 <form method="post" id="backupForm">
                     {% csrf_token %}
                     <input type="hidden" name="create_backup" value="1">
                     <input type="hidden" name="backup_path" id="backupPath" value="">
-                    
-                    <div style="text-align: center;">
-                        <button type="button" id="backupBtn" class="upload-btn btn-secondary">
-                            Create Backup
-                        </button>
-                    </div>
+                    <button type="button" id="backupBtn" class="btn btn-secondary">
+                        Create Backup
+                    </button>
                 </form>
             </div>
+        </div>
+    </div>
 
-            <!-- Upload New Database -->
-            <div class="card">
-                <h3>Upload New Database</h3>
-                <div class="warning">
-                    <strong>Warning:</strong> Uploading a new database will replace your current data. 
-                    A backup will be created automatically, but please ensure you have your own backups.
+    <!-- Export -->
+    <div class="col-12 col-md-6">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Export Database to Excel</div>
+            <div class="card-body">
+                <p class="text-muted small">Download all records as an Excel file.</p>
+                <a href="?export=true&include_empty=false" class="btn btn-outline-primary">
+                    Export Database
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload new database -->
+    <div class="col-12 col-md-6">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Upload New Database</div>
+            <div class="card-body">
+                <div class="alert alert-warning small">
+                    <strong>Warning:</strong> Uploading a new database will replace your current data.
+                    A backup will be created automatically, but ensure you have your own backups first.
                 </div>
-                
                 <form method="post" enctype="multipart/form-data" id="uploadForm">
                     {% csrf_token %}
-                    <div class="upload-area" onclick="document.getElementById('upload_db').click()">
-                        <div style="font-size: 48px; margin-bottom: 15px; color: #667eea;">📁</div>
-                        <p>Click here to select a database file</p>
-                        <p style="color: #6c757d; font-size: 14px;">Supported formats: .sqlite3</p>
-                        <div id="fileName"></div>
+                    <div class="border border-2 border-dashed rounded p-4 text-center mb-3"
+                         style="cursor:pointer; border-style: dashed !important;"
+                         onclick="document.getElementById('upload_db').click()">
+                        <div class="fs-1 mb-2 text-primary">&#128193;</div>
+                        <p class="mb-1">Click to select a database file</p>
+                        <p class="text-muted small mb-0">Supported: .sqlite3</p>
+                        <div id="fileName" class="mt-2 fw-semibold text-primary small"></div>
                     </div>
-                    
-                    <input type="file" id="upload_db" name="upload_db" accept=".sqlite3" class="file-input">
-                    
-                    <div style="text-align: center; margin-top: 20px;">
-                        <button type="submit" class="upload-btn" id="uploadBtn" disabled>
-                            Upload Database
-                        </button>
-                    </div>
+                    <input type="file" id="upload_db" name="upload_db" accept=".sqlite3" class="d-none">
+                    <button type="submit" class="btn btn-primary w-100" id="uploadBtn" disabled>
+                        Upload Database
+                    </button>
                 </form>
             </div>
+        </div>
+    </div>
 
-            <!-- Export Database to Excel -->
-            <div class="card">
-                <h3>Export Database to Excel</h3>
-                <div style="text-align: center; margin-top: 20px;">
-                    <a href="?export=true&include_empty=false" class="upload-btn" style="text-decoration: none;">
-                        Export Database
-                    </a>
-                </div>
-            </div>
-
-            <!-- Update Database with Excel/CSV -->
-            <div class="card">
-                <h3>Update Database with Excel/CSV</h3>
-                <div class="warning">
-                    <strong>Info:</strong> Use this form to add new records to your current database by uploading an Excel or CSV file.<br>
-                    The file should contain columns matching the database fields (e.g., ear_tag_id, birth_year, eid, breeding_season, check_date, comments, is_pregnant, recheck).
+    <!-- Update with Excel/CSV -->
+    <div class="col-12 col-md-6">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Update Database with Excel / CSV</div>
+            <div class="card-body">
+                <div class="alert alert-info small">
+                    <strong>Info:</strong> Use this form to add new records by uploading an Excel or CSV file.
+                    The file should contain columns: ear_tag_id, birth_year, eid, breeding_season,
+                    check_date, comments, is_pregnant, recheck.
                 </div>
                 <form method="post" enctype="multipart/form-data" id="updateForm">
                     {% csrf_token %}
-                    <!-- Add hidden fields so the backend can receive backup instructions -->
                     <input type="hidden" name="create_backup" value="1">
                     <input type="hidden" id="updateBackupPath" name="backup_path" value="">
-                    <div class="upload-area" onclick="document.getElementById('update_db').click()">
-                        <div style="font-size: 48px; margin-bottom: 15px; color: #667eea;">📄</div>
-                        <p>Click here to select an Excel or CSV file to add records</p>
-                        <p style="color: #6c757d; font-size: 14px;">Supported formats: .xlsx, .xls, .csv</p>
-                        <div id="updateFileName"></div>
+                    <div class="border border-2 rounded p-4 text-center mb-3"
+                         style="cursor:pointer; border-style: dashed !important;"
+                         onclick="document.getElementById('update_db').click()">
+                        <div class="fs-1 mb-2 text-primary">&#128196;</div>
+                        <p class="mb-1">Click to select an Excel or CSV file</p>
+                        <p class="text-muted small mb-0">Supported: .xlsx, .xls, .csv</p>
+                        <div id="updateFileName" class="mt-2 fw-semibold text-primary small"></div>
                     </div>
-                    <input type="file" id="update_db" name="update_db" accept=".xlsx,.xls,.csv" class="file-input">
-                    <div style="text-align: center; margin-top: 20px;">
-                        <button type="submit" class="upload-btn" id="updateBtn" disabled>
-                            Add Records
-                        </button>
-                    </div>
+                    <input type="file" id="update_db" name="update_db" accept=".xlsx,.xls,.csv" class="d-none">
+                    <button type="submit" class="btn btn-primary w-100" id="updateBtn" disabled>
+                        Add Records
+                    </button>
                 </form>
             </div>
-
+        </div>
     </div>
 
-    <script>
-        // Handle file selection
-        document.getElementById('upload_db').addEventListener('change', function(e) {
-            const fileName = e.target.files[0]?.name;
-            const fileNameDiv = document.getElementById('fileName');
-            const uploadBtn = document.getElementById('uploadBtn');
-            
-            if (fileName) {
-                fileNameDiv.textContent = `Selected: ${fileName}`;
-                uploadBtn.disabled = false;
-                uploadBtn.style.opacity = '1';
-            } else {
-                fileNameDiv.textContent = '';
-                uploadBtn.disabled = true;
-                uploadBtn.style.opacity = '0.5';
-            }
-        });
+</div>
 
-        // Handle update file selection
-        document.getElementById('update_db').addEventListener('change', function(e) {
-            const fileName = e.target.files[0]?.name;
-            const fileNameDiv = document.getElementById('updateFileName');
-            const updateBtn = document.getElementById('updateBtn');
-            if (fileName) {
-                fileNameDiv.textContent = `Selected: ${fileName}`;
-                updateBtn.disabled = false;
-                updateBtn.style.opacity = '1';
-            } else {
-                fileNameDiv.textContent = '';
-                updateBtn.disabled = true;
-                updateBtn.style.opacity = '0.5';
-            }
-        });
+{% endblock %}
 
-        // Handle update form submission: create a backup (allow user to choose path) then submit
-        document.getElementById('updateForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const form = this;
-            const updateBtn = document.getElementById('updateBtn');
-            const backupPathInput = document.getElementById('updateBackupPath');
+{% block extra_js %}
+<script>
+    document.getElementById('upload_db').addEventListener('change', function(e) {
+        const fileName = e.target.files[0]?.name;
+        const fileNameDiv = document.getElementById('fileName');
+        const uploadBtn  = document.getElementById('uploadBtn');
+        if (fileName) {
+            fileNameDiv.textContent = `Selected: ${fileName}`;
+            uploadBtn.disabled = false;
+        } else {
+            fileNameDiv.textContent = '';
+            uploadBtn.disabled = true;
+        }
+    });
 
-            if (!confirm('A backup of the current database will be created before importing. Continue?')) {
-                return;
-            }
-
-            // UI feedback
-            const originalBtnText = updateBtn.textContent;
-            updateBtn.textContent = 'Preparing backup...';
+    document.getElementById('update_db').addEventListener('change', function(e) {
+        const fileName = e.target.files[0]?.name;
+        const fileNameDiv = document.getElementById('updateFileName');
+        const updateBtn  = document.getElementById('updateBtn');
+        if (fileName) {
+            fileNameDiv.textContent = `Selected: ${fileName}`;
+            updateBtn.disabled = false;
+        } else {
+            fileNameDiv.textContent = '';
             updateBtn.disabled = true;
+        }
+    });
 
-            // Try Electron save dialog if available
-            if (window.require) {
-                try {
-                    const { ipcRenderer } = window.require('electron');
-                    const defaultName = `ranch_tools_backup_${new Date().toISOString().slice(0,10)}.sqlite3`;
-                    const result = await ipcRenderer.invoke('show-save-dialog', {
-                        title: 'Save Database Backup',
-                        defaultPath: defaultName,
-                        filters: [
-                            { name: 'SQLite Database', extensions: ['sqlite3', 'db'] },
-                            { name: 'All Files', extensions: ['*'] }
-                        ]
-                    });
+    document.getElementById('updateForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const form = this;
+        const updateBtn = document.getElementById('updateBtn');
+        const backupPathInput = document.getElementById('updateBackupPath');
 
-                    if (result && !result.canceled && result.filePath) {
-                        backupPathInput.value = result.filePath;
-                        updateBtn.textContent = 'Creating Backup...';
-                        form.submit();
-                        return;
-                    } else {
-                        // User cancelled save dialog
-                        updateBtn.textContent = originalBtnText;
-                        updateBtn.disabled = false;
-                        return;
-                    }
-                } catch (err) {
-                    console.error('Electron save dialog failed:', err);
-                    alert('Unable to open save dialog. Please try again.');
-                    updateBtn.textContent = originalBtnText;
+        if (!confirm('A backup of the current database will be created before importing. Continue?')) return;
+
+        const originalText = updateBtn.textContent;
+        updateBtn.textContent = 'Preparing backup...';
+        updateBtn.disabled = true;
+
+        if (window.require) {
+            try {
+                const { ipcRenderer } = window.require('electron');
+                const defaultName = `ranch_tools_backup_${new Date().toISOString().slice(0,10)}.sqlite3`;
+                const result = await ipcRenderer.invoke('show-save-dialog', {
+                    title: 'Save Database Backup',
+                    defaultPath: defaultName,
+                    filters: [
+                        { name: 'SQLite Database', extensions: ['sqlite3', 'db'] },
+                        { name: 'All Files', extensions: ['*'] }
+                    ]
+                });
+                if (result && !result.canceled && result.filePath) {
+                    backupPathInput.value = result.filePath;
+                    updateBtn.textContent = 'Creating Backup...';
+                    form.submit();
+                } else {
+                    updateBtn.textContent = originalText;
                     updateBtn.disabled = false;
-                    return;
                 }
-            }
-
-            // Fallback for non-Electron (browser): prompt for a backup filename/path
-            const defaultName = `ranch_tools_backup_${new Date().toISOString().slice(0,10)}.sqlite3`;
-            const userPath = prompt('Enter a filename for the backup (the file will be created server-side):', defaultName);
-            if (userPath === null) {
-                // user cancelled
-                updateBtn.textContent = originalBtnText;
+            } catch (err) {
+                console.error('Electron save dialog failed:', err);
+                alert('Unable to open save dialog. Please try again.');
+                updateBtn.textContent = originalText;
                 updateBtn.disabled = false;
-                return;
             }
-            // Set the provided path/name and submit
-            backupPathInput.value = userPath.trim() || defaultName;
-            updateBtn.textContent = 'Creating Backup...';
-            form.submit();
-        });
-        
-        // Handle form submission with confirmation (uploadForm)
-        document.getElementById('uploadForm').addEventListener('submit', function(e) {
-            if (!confirm('Are you sure you want to replace the current database? This action cannot be undone (although a backup will be created).')) {
-                e.preventDefault();
-            }
-        });
+            return;
+        }
 
-        document.getElementById('backupBtn').addEventListener('click', async function() {
-            const btn = this;
-            const form = document.getElementById('backupForm');
-            const backupPathInput = document.getElementById('backupPath');
-            
-            // Check if we're in Electron environment
-            if (window.require) {
-                console.log('Running in Electron environment');
-                try {
-                    const { ipcRenderer } = window.require('electron');
-                    
-                    // Request file save dialog from main process
-                    const result = await ipcRenderer.invoke('show-save-dialog', {
-                        title: 'Save Database Backup',
-                        defaultPath: `ranch_tools_backup_${new Date().toISOString().slice(0, 10)}.sqlite3`,
-                        filters: [
-                            { name: 'SQLite Database', extensions: ['sqlite3', 'db'] },
-                            { name: 'All Files', extensions: ['*'] }
-                        ]
-                    });
-                    
-                    if (!result.canceled && result.filePath) {
-                        // User selected a location, set the path and submit form
-                        backupPathInput.value = result.filePath;
-                        
-                        btn.textContent = 'Creating Backup...';
-                        btn.disabled = true;
-                        
-                        // Submit the form to your existing Django view
-                        form.submit();
-                    }
-                } catch (error) {
-                    console.error('Error accessing Electron APIs:', error);
-                    alert('Error accessing file system. Please try again.');
-                }
-            } else {
-                console.log('Not running in Electron environment');
-                // Not in Electron - fallback behavior
-                if (confirm('Create backup with default name?')) {
+        const defaultName = `ranch_tools_backup_${new Date().toISOString().slice(0,10)}.sqlite3`;
+        const userPath = prompt('Enter a filename for the backup:', defaultName);
+        if (userPath === null) {
+            updateBtn.textContent = originalText;
+            updateBtn.disabled = false;
+            return;
+        }
+        backupPathInput.value = userPath.trim() || defaultName;
+        updateBtn.textContent = 'Creating Backup...';
+        form.submit();
+    });
+
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        if (!confirm('Are you sure you want to replace the current database? A backup will be created, but this cannot be undone.')) {
+            e.preventDefault();
+        }
+    });
+
+    document.getElementById('backupBtn').addEventListener('click', async function() {
+        const btn = this;
+        const form = document.getElementById('backupForm');
+        const backupPathInput = document.getElementById('backupPath');
+
+        if (window.require) {
+            try {
+                const { ipcRenderer } = window.require('electron');
+                const result = await ipcRenderer.invoke('show-save-dialog', {
+                    title: 'Save Database Backup',
+                    defaultPath: `ranch_tools_backup_${new Date().toISOString().slice(0, 10)}.sqlite3`,
+                    filters: [
+                        { name: 'SQLite Database', extensions: ['sqlite3', 'db'] },
+                        { name: 'All Files', extensions: ['*'] }
+                    ]
+                });
+                if (!result.canceled && result.filePath) {
+                    backupPathInput.value = result.filePath;
                     btn.textContent = 'Creating Backup...';
                     btn.disabled = true;
                     form.submit();
                 }
+            } catch (error) {
+                console.error('Error accessing Electron APIs:', error);
+                alert('Error accessing file system. Please try again.');
             }
-        });
-        
-        // Handle backup form
-        {% comment %} document.getElementById('backupForm').addEventListener('submit', function(e) {
-            const btn = e.target.querySelector('button');
-            btn.textContent = 'Creating Backup...';
-            btn.disabled = true;
-        }); {% endcomment %}
-    </script>
-</body>
-</html>
+        } else {
+            if (confirm('Create backup with default name?')) {
+                btn.textContent = 'Creating Backup...';
+                btn.disabled = true;
+                form.submit();
+            }
+        }
+    });
+</script>
+{% endblock %}

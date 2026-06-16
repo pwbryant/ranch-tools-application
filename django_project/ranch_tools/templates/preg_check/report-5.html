@@ -1,150 +1,143 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Summary By Birth Year</title>
-    <style>
-        .green-bg {
-            background-color: #90EE90;
-            font-weight: bold;
-        }
-        .yellow-bg {
-            background-color: #FFFF99;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <div class="nav-container">
-        <a href="{% url 'pregcheck-reports' %}" class="nav-button">← Back to Reports</a>
-        <a href="/pregchecks" class="nav-button">← Back to Pregnancy Checks</a>
+{% extends 'base.html' %}
+
+{% block title %}Pregnancy Rate by Cow Age{% endblock %}
+
+{% block content %}
+
+<div class="mb-4 pb-3 border-bottom">
+    <h4 class="fw-semibold mb-1">Pregnancy Rate by Cow Age</h4>
+</div>
+
+<!-- Filter form -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" action="" class="row g-3 align-items-end">
+            <div class="col-auto">
+                <label for="breeding_season" class="form-label fw-semibold small">Breeding Season</label>
+                <input type="text" class="form-control form-control-sm" id="breeding_season"
+                       name="breeding_season" value="{{ breeding_season }}" style="width:90px">
+            </div>
+            <div class="col-auto">
+                <label for="low_threshold" class="form-label fw-semibold small">Yellow threshold (&lt;%)</label>
+                <input type="number" class="form-control form-control-sm" id="low_threshold"
+                       name="low_threshold" value="80" min="0" max="100" style="width:80px">
+            </div>
+            <div class="col-auto">
+                <label for="high_threshold" class="form-label fw-semibold small">Green threshold (&ge;%)</label>
+                <input type="number" class="form-control form-control-sm" id="high_threshold"
+                       name="high_threshold" value="90" min="0" max="100" style="width:80px">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary btn-sm">Update</button>
+            </div>
+        </form>
     </div>
-    <h1>Pregnancy Rate by Cow Age</h1>
+</div>
 
-    <form method="get" action="">
-        <label for="breeding_season">Breeding season:</label>
-        <input type="text" id="breeding_season" name="breeding_season" value="{{ breeding_season }}" />
-        <button type="submit">Update Breeding Season</button>
+<!-- Main table -->
+<div class="card mb-4">
+    <div class="card-header fw-semibold">Pregnancy Rate by Birth Year (Cow Age)</div>
+    <div class="card-body p-0">
+        <table class="table table-sm table-bordered mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Cow Birth Year</th>
+                    <th>Age</th>
+                    <th>1st Pass Open</th>
+                    <th>1st Pass Pregnant</th>
+                    <th>1st Pass Total</th>
+                    <th>After Recheck Open</th>
+                    <th>After Recheck Pregnant</th>
+                    <th>After Recheck Total</th>
+                    <th>% Pregnant</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr>
+                    <td>{{ row.cow_birth_year }}</td>
+                    <td>{{ row.age }}</td>
+                    <td>{{ row.first_pass_open }}</td>
+                    <td>{{ row.first_pass_pregnant }}</td>
+                    <td>{{ row.first_pass_total }}</td>
+                    <td>{{ row.recheck_open }}</td>
+                    <td>{{ row.recheck_pregnant }}</td>
+                    <td>{{ row.recheck_total }}</td>
+                    <td class="pct-cell"
+                        {% with pct_value=row.pct_pregnant|slice:":-1"|floatformat:0 %}
+                            data-pct="{{ pct_value }}"
+                        {% endwith %}>{{ row.pct_pregnant }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">No data for this season.</td>
+                </tr>
+                {% endfor %}
+                {% if totals %}
+                <tr class="totals-row">
+                    <td>{{ totals.cow_birth_year }}</td>
+                    <td>{{ totals.age }}</td>
+                    <td>{{ totals.first_pass_open }}</td>
+                    <td>{{ totals.first_pass_pregnant }}</td>
+                    <td>{{ totals.first_pass_total }}</td>
+                    <td>{{ totals.recheck_open }}</td>
+                    <td>{{ totals.recheck_pregnant }}</td>
+                    <td>{{ totals.recheck_total }}</td>
+                    <td class="pct-cell"
+                        {% with pct_value=totals.pct_pregnant|slice:":-1"|floatformat:0 %}
+                            data-pct="{{ pct_value }}"
+                        {% endwith %}>{{ totals.pct_pregnant }}</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
-        <label for="low_threshold" style="margin-left: 20px;">Yellow threshold (<%):</label>
-        <input type="number" id="low_threshold" name="low_threshold" value="80" min="0" max="100" />
-        
-        <label for="high_threshold" style="margin-left: 30px;">Green threshold (>=%):</label>
-        <input type="number" id="high_threshold" name="high_threshold" value="90" min="0" max="100" />        
-    </form>
+<!-- Unknown cows table -->
+<div class="card">
+    <div class="card-header fw-semibold">Pregnancy Rate — Unknown Cows</div>
+    <div class="card-body p-0">
+        <table class="table table-sm table-bordered mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Open</th>
+                    <th>Pregnant</th>
+                    <th>% Pregnant</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ no_cow_row.net_open }}</td>
+                    <td>{{ no_cow_row.net_pregnant }}</td>
+                    <td class="pct-cell"
+                        {% with pct_value=no_cow_row.pct_pregnant|slice:":-1"|floatformat:0 %}
+                            data-pct="{{ pct_value }}"
+                        {% endwith %}>{{ no_cow_row.pct_pregnant }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
-    <table border="1" cellpadding="6" cellspacing="0">
-        <thead>
-            <tr>
-                <th>Cow Birth Year</th>
-                <th>Age</th>
-                <th>First Pass Open</th>
-                <th>First Pass Pregnant</th>
-                <th>First Pass Total</th>
-                <th>After Recheck Open</th>
-                <th>After Recheck Pregnant</th>
-                <th>After Recheck Total</th>
-                <th>% Pregnant</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in rows %}
-            <tr>
-                <td>{{ row.cow_birth_year }}</td>
-                <td>{{ row.age }}</td>
-                <td>{{ row.first_pass_open }}</td>
-                <td>{{ row.first_pass_pregnant }}</td>
-                <td>{{ row.first_pass_total }}</td>
-                <td>{{ row.recheck_open }}</td>
-                <td>{{ row.recheck_pregnant }}</td>
-                <td>{{ row.recheck_total }}</td>
-                <td 
-                    class="pct-cell"
-                    {% with pct_value=row.pct_pregnant|slice:":-1"|floatformat:0 %}
-                        data-pct="{{ pct_value }}"
-                    {% endwith %}
-                >{{ row.pct_pregnant }}</td>
-            </tr>
-            {% empty %}
-            <tr><td colspan="9">No data for this season.</td></tr>
-            {% endfor %}
-            {% if totals %}
-            <tr style="background-color: #e0e0e0; font-weight: bold;">
-                <td>{{ totals.cow_birth_year }}</td>
-                <td>{{ totals.age }}</td>
-                <td>{{ totals.first_pass_open }}</td>
-                <td>{{ totals.first_pass_pregnant }}</td>
-                <td>{{ totals.first_pass_total }}</td>
-                <td>{{ totals.recheck_open }}</td>
-                <td>{{ totals.recheck_pregnant }}</td>
-                <td>{{ totals.recheck_total }}</td>
-                <td 
-                    class="pct-cell"
-                    {% with pct_value=totals.pct_pregnant|slice:":-1"|floatformat:0 %}
-                        data-pct="{{ pct_value }}"
-                    {% endwith %}
-                >{{ totals.pct_pregnant }}</td>
-            </tr>
-            {% endif %}
-        </tbody>
-    </table>
+{% endblock %}
 
-    <h2>Pregnancy Rate for Unknown Cows</h1>
-    <table border="1" cellpadding="6" cellspacing="0">
-        <thead>
-            <tr>
-                <th>Open</th>
-                <th>Pregnant</th>
-                <th>% Pregnant</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>{{ no_cow_row.net_open }}</td>
-                <td>{{ no_cow_row.net_pregnant }}</td>
-                <td 
-                    class="pct-cell"
-                    {% with pct_value=no_cow_row.pct_pregnant|slice:":-1"|floatformat:0 %}
-                        data-pct="{{ pct_value }}"
-                    {% endwith %}
-                >{{ no_cow_row.pct_pregnant }}</td>
-            </tr>
-            {% comment %} {% empty %}
-            <tr><td colspan="9">No data for this season.</td></tr> {% endcomment %}
-        </tbody>
-    </table>
-    
-    <script>
-        function applyThresholdColoring() {
-            const highThreshold = parseInt(document.getElementById('high_threshold').value);
-            const lowThreshold = parseInt(document.getElementById('low_threshold').value);
-            
-            // Get all cells with percentage data
-            const cells = document.querySelectorAll('.pct-cell[data-pct]');
-            
-            cells.forEach(cell => {
-                const pctValue = parseInt(cell.getAttribute('data-pct'));
-                
-                // Remove existing classes
-                cell.classList.remove('green-bg', 'yellow-bg');
-                
-                // Apply appropriate class based on thresholds
-                if (pctValue >= highThreshold) {
-                    cell.classList.add('green-bg');
-                } else if (pctValue < lowThreshold) {
-                    cell.classList.add('yellow-bg');
-                }
-            });
-        }
-        
-        // Apply coloring on page load
-        document.addEventListener('DOMContentLoaded', applyThresholdColoring);
-        
-        // Re-apply coloring when threshold inputs change
-        document.getElementById('high_threshold').addEventListener('change', applyThresholdColoring);
-        document.getElementById('high_threshold').addEventListener('input', applyThresholdColoring);
-        document.getElementById('low_threshold').addEventListener('change', applyThresholdColoring);
-        document.getElementById('low_threshold').addEventListener('input', applyThresholdColoring);
-    </script>
-</body>
-</html>
+{% block extra_js %}
+<script>
+    function applyThresholdColoring() {
+        const highThreshold = parseInt(document.getElementById('high_threshold').value);
+        const lowThreshold  = parseInt(document.getElementById('low_threshold').value);
+        document.querySelectorAll('.pct-cell[data-pct]').forEach(cell => {
+            const pct = parseInt(cell.getAttribute('data-pct'));
+            cell.classList.remove('green-bg', 'yellow-bg');
+            if (pct >= highThreshold)     cell.classList.add('green-bg');
+            else if (pct < lowThreshold)  cell.classList.add('yellow-bg');
+        });
+    }
+    document.addEventListener('DOMContentLoaded', applyThresholdColoring);
+    ['high_threshold', 'low_threshold'].forEach(id => {
+        document.getElementById(id).addEventListener('change', applyThresholdColoring);
+        document.getElementById(id).addEventListener('input',  applyThresholdColoring);
+    });
+</script>
+{% endblock %}

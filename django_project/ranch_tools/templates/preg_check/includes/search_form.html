@@ -1,25 +1,34 @@
 {% load static %}
-<div class="form-container">
-    <form id="search-form" method="get" action="">
-        <div class="form-group">
-            {{ search_form.search_ear_tag_id.label_tag }}
-            {{ search_form.search_ear_tag_id }}
-        </div>
-        <div class="form-group">
-            {{ search_form.search_rfid.label_tag }}
-            {{ search_form.search_rfid }}
-        </div>
-        <!-- Render the search_birth_year field only if multiple_matches is True -->
-        <div class="form-group">
-            {{ search_form.search_birth_year.label_tag }}
-            {{ search_form.search_birth_year }}
-        </div>
-        <button type="submit">Search For Animal</button>
-        {% if animal_exists and not multiple_matches %}
-            <button id="edit-cow-btn" type="button">Edit Cow</button>
-            <button id="create-cow-btn" type="button">Create New Cow With ID: "{{ cow.ear_tag_id }}"</button>
-        {% endif %}
-        <button id="clear-search-form" type="button">Clear Form</button>
-     </form>
-</div>
+<form id="search-form" method="get" action="">
 
+    <div class="mb-3">
+        <label for="{{ search_form.search_ear_tag_id.id_for_label }}" class="form-label fw-semibold small">
+            {{ search_form.search_ear_tag_id.label }}
+        </label>
+        {{ search_form.search_ear_tag_id }}
+    </div>
+
+    <div class="mb-3">
+        <label for="{{ search_form.search_rfid.id_for_label }}" class="form-label fw-semibold small">
+            {{ search_form.search_rfid.label }}
+        </label>
+        {{ search_form.search_rfid }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold small">{{ search_form.search_birth_year.label }}</label>
+        {{ search_form.search_birth_year }}
+    </div>
+
+    <div class="d-grid gap-2 mt-3">
+        <button type="submit" class="btn btn-primary btn-sm">Search For Animal</button>
+        {% if animal_exists and not multiple_matches %}
+            <button id="edit-cow-btn" type="button" class="btn btn-outline-secondary btn-sm">Edit Cow</button>
+            <button id="create-cow-btn" type="button" class="btn btn-outline-secondary btn-sm">
+                Create New Cow: "{{ cow.ear_tag_id }}"
+            </button>
+        {% endif %}
+        <button id="clear-search-form" type="button" class="btn btn-outline-danger btn-sm">Clear</button>
+    </div>
+
+</form>

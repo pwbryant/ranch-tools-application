@@ -1,25 +1,39 @@
 {% load static %}
 <div id="no-animal-modal" class="modal">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-        <p>There is no animal associated with this ID. To create / update, provide as much info as possible.</p>
-        <form id="create-animal-form" action="{% url 'cow-create-update' %}" method="post">
-            {% csrf_token %}
-            <p>
-                <label for="new_ear_tag_id">Ear Tag ID</label>
-                <input type="text" id="new_ear_tag_id" name="ear_tag_id" value="{{ ear_tag_id }}" required>
-            </p>
-            <p>
-                <label for="new_birth_year">Birth Year</label>
-                <input type="text" id="new_birth_year" name="birth_year" required>
-            </p>
-            <p>
-                <label for="new_eid">RFID</label>
-                <input type="text" id="new_eid" name="eid">                    
-            </p>
-            <button id="create-animal-btn" type="submit">Create New / Update Existing</button>
-            <button id="cancel-create-btn" type="button">Cancel</button>
-        </form>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Animal Not Found</h5>
+                <button type="button" class="close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small">
+                    No animal is associated with this ID. Provide as much info as possible to create or update a record.
+                </p>
+                <form id="create-animal-form" action="{% url 'cow-create-update' %}" method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="new_ear_tag_id" class="form-label fw-semibold small">Ear Tag ID</label>
+                        <input type="text" id="new_ear_tag_id" name="ear_tag_id" value="{{ ear_tag_id }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_birth_year" class="form-label fw-semibold small">Birth Year</label>
+                        <input type="text" id="new_birth_year" name="birth_year" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new_eid" class="form-label fw-semibold small">RFID</label>
+                        <input type="text" id="new_eid" name="eid">
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button id="create-animal-btn" type="submit" class="btn btn-primary btn-sm">
+                            Create / Update
+                        </button>
+                        <button id="cancel-create-btn" type="button" class="btn btn-outline-secondary btn-sm">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
-

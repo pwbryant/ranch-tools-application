@@ -1,57 +1,72 @@
-<!-- Add this modal at the end of your HTML -->
 <div id="edit-modal" class="modal">
-    <div class="modal-content">
-        <span class="close">&times;</span>
-        <h2>Edit Pregnancy Record</h2>
-        <div id="form-errors" class="form-errors" style="display: none;">
-            <div class="error-message"></div>
-        </div>
-        <form id="edit-pregcheck-form" method="post" action=""> 
-            {% csrf_token %}
-            <input type="hidden" id="edit-pregcheck-id" name="pregcheck_id" value="">
-            <div class="form-group">
-                <label for="edit-ear-tag-id">Ear Tag ID:</label>
-                <input id="edit-ear-tag-id" name="ear_tag_id"/>
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Pregnancy Record</h5>
+                <button type="button" class="close">&times;</button>
             </div>
-            <div class="form-group">
-                <label for="edit-birth-year">Birth Year:</label>
-                <input id="edit-birth-year" name="birth_year" placeholder="Optional"/>
-            </div>
-            <div class="form-group">
-                <label for="edit-breeding-season">Breeding Season:</label>
-                <input id="edit-breeding-season" name="breeding_season"/>
-            </div>
-            <div class="form-group">
-                <label for="edit-check_date">Check Date</label>
-                <input id="edit-check_date" name="check_date"/>
+            <div class="modal-body">
+
+                <div id="form-errors" style="display: none;">
+                    <div class="error-message"></div>
+                </div>
+
+                <form id="edit-pregcheck-form" method="post" action="">
+                    {% csrf_token %}
+                    <input type="hidden" id="edit-pregcheck-id" name="pregcheck_id" value="">
+
+                    <div class="row g-3">
+                        <div class="col-12 col-sm-6">
+                            <label for="edit-ear-tag-id" class="form-label fw-semibold small">Ear Tag ID</label>
+                            <input id="edit-ear-tag-id" name="ear_tag_id">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label for="edit-birth-year" class="form-label fw-semibold small">Birth Year</label>
+                            <input id="edit-birth-year" name="birth_year" placeholder="Optional">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label for="edit-breeding-season" class="form-label fw-semibold small">Breeding Season</label>
+                            <input id="edit-breeding-season" name="breeding_season">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label for="edit-check_date" class="form-label fw-semibold small">Check Date</label>
+                            <input id="edit-check_date" name="check_date">
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label for="edit-is_pregnant" class="form-label fw-semibold small">Is Pregnant</label>
+                            <select id="edit-is_pregnant" name="is_pregnant">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="edit-comments" class="form-label fw-semibold small">Comments</label>
+                            <textarea id="edit-comments" name="comments" rows="3"></textarea>
+                        </div>
+                        <div class="col-12">
+                            <div class="d-flex flex-wrap gap-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" id="edit-recheck" type="checkbox" name="recheck">
+                                    <label class="form-check-label small" for="edit-recheck">Recheck</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" id="edit-should-sell" type="checkbox" name="should_sell">
+                                    <label class="form-check-label small" for="edit-should-sell">Should Sell</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" id="edit-new-cow" type="checkbox" name="new_cow">
+                                    <label class="form-check-label small" for="edit-new-cow">Create new cow if not found</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4">
+                        <input type="submit" class="btn btn-primary btn-sm" value="Save Changes">
+                    </div>
+                </form>
 
             </div>
-            <div class="form-group">
-                <label for="edit-is_pregnant">Is Pregnant:</label>
-                <select id="edit-is_pregnant" name="is_pregnant">
-                    <option value="true">Yes</option>
-                    <option value="false">No</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="edit-comments">Comments:</label>
-                <textarea id="edit-comments" name="comments" rows="4"></textarea>
-            </div>
-            <div class="form-group">
-                <label for="edit-recheck">Recheck</label>
-                <input id="edit-recheck" type="checkbox" name="recheck"/>
-            </div>
-            <div class="form-group">
-                <label for="edit-should-sell">Should Sell</label>
-                <input id="edit-should-sell" type="checkbox" name="should_sell"/>
-            </div>
-            <div class="form-group">
-                <label for="edit-new-cow">Create new cow if not found</label>
-                <input id="edit-new-cow" type="checkbox" name="new_cow"/>
-            </div>
-            <!-- Add more form fields as needed -->
-            <input type="submit" value="Save">
-        </form>
+        </div>
     </div>
 </div>
-

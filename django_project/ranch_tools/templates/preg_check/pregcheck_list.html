@@ -1,67 +1,83 @@
+{% extends 'base.html' %}
 {% load custom_filters %}
 {% load static %}
-<link rel="stylesheet" type="text/css" href="{% static 'preg_check/css/styles.css' %}">
 
+{% block title %}Pregnancy Checks{% endblock %}
 
-<div class="header">
+{% block content %}
 
-<div class="nav-container">
-    <select id="nav-select" class="nav-select" aria-label="Navigate to">
-        <option value="">Navigate…</option>
-        <option value="{% url 'database_management' %}">Go to Database Management</option>
-        <option value="{% url 'pregcheck-reports' %}">Go to Reports</option>
-        <option value="/admin">Go to PregCheck Admin</option>
-    </select>
-    </div>
+<!-- Breeding season selector -->
+<div class="d-flex align-items-center mb-4 pb-3 border-bottom">
+    <h5 class="me-3 mb-0 fw-semibold">Breeding Season</h5>
+    <input type="text"
+           id="breeding-season-input"
+           placeholder="YYYY"
+           maxlength="4"
+           pattern="\d{4}"
+           title="Enter a 4-digit year"
+           value="{{ current_breeding_season }}">
 </div>
 
-<div class="container">
-    <div class="breeding-season-container">
-        <h2>Current Breeding Season:</h2>
-        <input type="text" id="breeding-season-input" placeholder="YYYY" maxlength="4" pattern="\d{4}" title="Enter a 4-digit year" value="{{ current_breeding_season }}">
-    </div>
-    <div class="content-row">
-        <div>
-            {% include 'preg_check/includes/stats_content.html' %}
-            {% include 'preg_check/includes/previous_pregcheck_list.html' %}
+<!-- Three-column main layout -->
+<div class="row g-4" id="pregcheck-container">
+
+    <!-- Left: stats + previous checks -->
+    <div class="col-12 col-lg-3">
+        <div class="card h-100">
+            <div class="card-body p-3">
+                {% include 'preg_check/includes/stats_content.html' %}
+                <hr class="my-3">
+                {% include 'preg_check/includes/previous_pregcheck_list.html' %}
+            </div>
         </div>
-        {% include 'preg_check/includes/search_form.html' %}
-        {% include 'preg_check/includes/pregcheck_form.html' %}
     </div>
 
-    {% include 'preg_check/includes/results_container.html' %}
+    <!-- Middle: search form -->
+    <div class="col-12 col-lg-3">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Search Animal</div>
+            <div class="card-body p-3">
+                {% include 'preg_check/includes/search_form.html' %}
+            </div>
+        </div>
+    </div>
 
-    <div>
-        {% include 'preg_check/includes/message_modal.html' %}
-        {% include 'preg_check/includes/no_animal_modal.html' %}
-        {% include 'preg_check/includes/no_animal_rfid_modal.html' %}
-        {% include 'preg_check/includes/edit_preg_check_modal.html' %}
-        {% include 'preg_check/includes/edit_cow_modal.html' %}
-        {% include 'preg_check/includes/create_new_cow_modal.html' %}
+    <!-- Right: pregcheck form -->
+    <div class="col-12 col-lg-6">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Record Preg Check</div>
+            <div class="card-body p-3">
+                {% include 'preg_check/includes/pregcheck_form.html' %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Results row -->
+<div class="row mt-4">
+    <div class="col-12">
+        {% include 'preg_check/includes/results_container.html' %}
     </div>
 </div>
 
+<!-- Modals -->
+{% include 'preg_check/includes/message_modal.html' %}
+{% include 'preg_check/includes/no_animal_modal.html' %}
+{% include 'preg_check/includes/no_animal_rfid_modal.html' %}
+{% include 'preg_check/includes/edit_preg_check_modal.html' %}
+{% include 'preg_check/includes/edit_cow_modal.html' %}
+{% include 'preg_check/includes/create_new_cow_modal.html' %}
+
+{% endblock %}
+
+{% block extra_js %}
 <script type="text/javascript">
-    <!-- define vars to be used by external js files -->
     const pregcheckSummaryStatsUrl = "{% url 'pregcheck-summary-stats' %}";
     const previousPregcheckUrl = "{% url 'previous-pregchecks' %}";
     const animalExists = "{{ animal_exists }}" === "True";
     const pregchecksUrl = "{% url 'pregcheck-list' %}";
     const latestBreedingSeason = {{ latest_breeding_season }};
-
-    // Navigate to the chosen URL when user selects an option.
-    // Keeps behavior simple and works without extra libraries.
-    document.addEventListener('DOMContentLoaded', function () {
-    const select = document.getElementById('nav-select');
-    if (!select) return;
-    select.addEventListener('change', function () {
-      const url = this.value;
-      if (url) {
-        window.location.href = url;
-      }
-    });
-  });
 </script>
-
 <script type="text/javascript" src="{% static 'preg_check/js/script.js' %}"></script>
-
+{% endblock %}

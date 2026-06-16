@@ -1,257 +1,177 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Rolling Average Report</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f5f5f5;
-        }
-        .nav-container {
-            margin-bottom: 20px;
-        }
-        .nav-button {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-        .nav-button:hover {
-            background-color: #0056b3;
-        }
-        h1 {
-            color: #333;
-            border-bottom: 2px solid #007bff;
-            padding-bottom: 10px;
-        }
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            max-width: 1000px;
-            background-color: white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            margin-top: 20px;
-        }
-        th {
-            background-color: #007bff;
-            color: white;
-            padding: 12px;
-            text-align: center;
-            font-weight: bold;
-            border: 1px solid #ddd;
-        }
-        td {
-            padding: 12px;
-            border: 1px solid #ddd;
-            text-align: center;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        tr:hover {
-            background-color: #f0f0f0;
-        }
-        .age-cell {
-            text-align: left;
-            font-weight: bold;
-        }
-        .rolling-avg-cell {
-            background-color: #e7f3ff;
-            font-weight: bold;
-        }
-        .no-data {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-            font-size: 16px;
-        }
-        .high-pct {
-            background-color: #90EE90;
-            font-weight: bold;
-        }
-        .low-pct {
-            background-color: #FFFF99;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <div class="nav-container">
-        <a href="{% url 'pregcheck-reports' %}" class="nav-button">← Back to Reports</a>
-        <a href="/pregchecks" class="nav-button">← Back to Pregnancy Checks</a>
-    </div>
+{% extends 'base.html' %}
+
+{% block title %}Rolling Average Report{% endblock %}
+
+{% block content %}
+
+<div class="mb-4 pb-3 border-bottom">
     {% if breeding_season %}
-        <h1>{{ breeding_season }} Season Rolling Average Report — Pregnancy Rate by Age Class</h1>
+        <h4 class="fw-semibold mb-1">{{ breeding_season }} Season — Rolling Average Report</h4>
     {% else %}
-        <h1>Rolling Average Report — Pregnancy Rate by Age Class</h1>
-    {% endif %}        
-    <p>Four-year rolling average pregnancy rates for each age class across the herd.</p>
-
-    <form method="get" action="">
-        <label for="breeding_season">Breeding season:</label>
-        <input type="text" id="breeding_season" name="breeding_season" value="{{ breeding_season }}" />
-        <button type="submit">Update Breeding Season</button>
-
-        <label for="low_threshold" style="margin-left: 20px;">Yellow threshold (<%):</label>
-        <input type="number" id="low_threshold" name="low_threshold" value="80" min="0" max="100" step="0.1"/>
-        
-        <label for="high_threshold" style="margin-left: 30px;">Green threshold (>=%):</label>
-        <input type="number" id="high_threshold" name="high_threshold" value="90" min="0" max="100" step="0.1"/>        
-    </form>
-
-    {% if rows %}
-    <table border="1" cellpadding="6" cellspacing="0">
-        <thead>
-            <tr>
-                <th>Cow Age</th>
-                {% for season in seasons %}
-                    <th>{{ season }}</th>
-                {% endfor %}
-                <th>Rolling Avg</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for row in rows %}
-            <tr>
-                <td class="age-cell">{{ row.age }}</td>
-                {% for rate in row.season_rates %}
-                    <td 
-                        class="pct-cell"
-                        {% if rate != "—" %}
-                            {% with pct_value=rate.rate|slice:":-1"|floatformat:1 %}
-                                data-pct="{{ pct_value }}"
-                            {% endwith %}
-                        {% endif %}
-                    >{{ rate.rate }}{% if rate != "—" %}(n={{ rate.count }}){% else %}-{% endif %}</td>
-                {% endfor %}
-                <td 
-                    class="rolling-avg-cell pct-cell"
-                    {% if row.rolling_avg != "—" %}
-                        {% with pct_value=row.rolling_avg|slice:":-1"|floatformat:1 %}
-                            data-pct="{{ pct_value }}"
-                        {% endwith %}
-                    {% endif %}
-                >{{ row.rolling_avg }}</td>
-            </tr>
-            {% endfor %}
-            {% if totals %}
-            <tr style="background-color: #e0e0e0; font-weight: bold; border-top: 2px solid #333;">
-                <td class="age-cell">{{ totals.age }}</td>
-                {% for rate in totals.season_rates %}
-                    <td 
-                        class="pct-cell"
-                        {% if rate != "-" %}
-                            {% with pct_value=rate.rate|slice:":-1"|floatformat:1 %}
-                                data-pct="{{ pct_value }}"
-                            {% endwith %}
-                        {% endif %}
-                    >{{ rate.rate }}{% if rate != "-" %}(n={{ rate.count }}){% else %}-{% endif %}</td>
-                {% endfor %}
-                <td 
-                    class="pct-cell"
-                    {% if totals.rolling_avg != "—" %}
-                        {% with pct_value=totals.rolling_avg|slice:":-1"|floatformat:1 %}
-                            data-pct="{{ pct_value }}"
-                        {% endwith %}
-                    {% endif %}
-                >{{ totals.rolling_avg }}</td>
-            </tr>
-            {% endif %}
-        </tbody>
-    </table>
-
-    {% comment %} No Cow Pregcheck table {% endcomment %}
-    <h2>Unknown Cow Preg Checks</h2>
-    <table border="1" cellpadding="6" cellspacing="0">
-        <thead>
-            <tr>
-                {% for season in seasons %}
-                    <th>{{ season }}</th>
-                {% endfor %}
-                <th>Rolling Avg</th>
-            </tr>
-        </thead>
-        <tbody>
-        <tbody>
-            {% for row in no_cow_rows %}
-            <tr>
-                {% for rate in row.season_rates %}
-                    <td 
-                        class="pct-cell"
-                        {% if rate != "—" %}
-                            {% with pct_value=rate.rate|slice:":-1"|floatformat:1 %}
-                                data-pct="{{ pct_value }}"
-                            {% endwith %}
-                        {% endif %}
-                    >{{ rate.rate }}{% if rate != "—" %}(n={{ rate.count }}){% else %}-{% endif %}</td>
-                {% endfor %}
-                <td 
-                    class="rolling-avg-cell pct-cell"
-                    {% if row.rolling_avg != "—" %}
-                        {% with pct_value=row.rolling_avg|slice:":-1"|floatformat:1 %}
-                            data-pct="{{ pct_value }}"
-                        {% endwith %}
-                    {% endif %}
-                >{{ row.rolling_avg }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    {% else %}
-    <div class="no-data">
-        <p>No data available for this report. Please ensure pregnancy check records exist in the system.</p>
-    </div>
+        <h4 class="fw-semibold mb-1">Rolling Average Report</h4>
     {% endif %}
-    
-    <script>
-        function applyThresholdColoring() {
-            const highThreshold = parseFloat(document.getElementById('high_threshold').value);
-            const lowThreshold = parseFloat(document.getElementById('low_threshold').value);
-            
-            // Get all cells with percentage data
-            const cells = document.querySelectorAll('.pct-cell[data-pct]');
-            
-            cells.forEach(cell => {
-                const pctValue = parseFloat(cell.getAttribute('data-pct'));
-                
-                // Remove existing classes
-                cell.classList.remove('high-pct', 'low-pct');
-                
-                // Apply appropriate class based on thresholds
-                if (pctValue >= highThreshold) {
-                    cell.classList.add('high-pct');
-                } else if (pctValue < lowThreshold) {
-                    cell.classList.add('low-pct');
-                }
-            });
-        }
-        
-        // Apply coloring on page load
-        document.addEventListener('DOMContentLoaded', applyThresholdColoring);
-        
-        // Re-apply coloring when threshold inputs change
-        document.getElementById('high_threshold').addEventListener('change', applyThresholdColoring);
-        document.getElementById('high_threshold').addEventListener('input', applyThresholdColoring);
-        document.getElementById('low_threshold').addEventListener('change', applyThresholdColoring);
-        document.getElementById('low_threshold').addEventListener('input', applyThresholdColoring);
-        
-        // Prevent form submission when pressing Enter in threshold inputs
-        document.getElementById('high_threshold').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-            }
+    <p class="text-muted mb-0">Four-year rolling average pregnancy rates for each age class across the herd.</p>
+</div>
+
+<!-- Filter form -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" action="" class="row g-3 align-items-end">
+            <div class="col-auto">
+                <label for="breeding_season" class="form-label fw-semibold small">Breeding Season</label>
+                <input type="text" class="form-control form-control-sm" id="breeding_season"
+                       name="breeding_season" value="{{ breeding_season }}" style="width:90px">
+            </div>
+            <div class="col-auto">
+                <label for="low_threshold" class="form-label fw-semibold small">Yellow threshold (&lt;%)</label>
+                <input type="number" class="form-control form-control-sm" id="low_threshold"
+                       name="low_threshold" value="80" min="0" max="100" step="0.1" style="width:80px">
+            </div>
+            <div class="col-auto">
+                <label for="high_threshold" class="form-label fw-semibold small">Green threshold (&ge;%)</label>
+                <input type="number" class="form-control form-control-sm" id="high_threshold"
+                       name="high_threshold" value="90" min="0" max="100" step="0.1" style="width:80px">
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary btn-sm">Update</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if rows %}
+
+<!-- Rolling average table -->
+<div class="card mb-4">
+    <div class="card-header fw-semibold">Pregnancy Rate by Age Class</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cow Age</th>
+                        {% for season in seasons %}
+                            <th>{{ season }}</th>
+                        {% endfor %}
+                        <th>Rolling Avg</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td class="age-cell">{{ row.age }}</td>
+                        {% for rate in row.season_rates %}
+                            <td class="pct-cell"
+                                {% if rate != "—" %}
+                                    {% with pct_value=rate.rate|slice:":-1"|floatformat:1 %}
+                                        data-pct="{{ pct_value }}"
+                                    {% endwith %}
+                                {% endif %}>
+                                {{ rate.rate }}{% if rate != "—" %} (n={{ rate.count }}){% else %}-{% endif %}
+                            </td>
+                        {% endfor %}
+                        <td class="rolling-avg-cell pct-cell"
+                            {% if row.rolling_avg != "—" %}
+                                {% with pct_value=row.rolling_avg|slice:":-1"|floatformat:1 %}
+                                    data-pct="{{ pct_value }}"
+                                {% endwith %}
+                            {% endif %}>{{ row.rolling_avg }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% if totals %}
+                    <tr class="totals-row">
+                        <td class="age-cell">{{ totals.age }}</td>
+                        {% for rate in totals.season_rates %}
+                            <td class="pct-cell"
+                                {% if rate != "-" %}
+                                    {% with pct_value=rate.rate|slice:":-1"|floatformat:1 %}
+                                        data-pct="{{ pct_value }}"
+                                    {% endwith %}
+                                {% endif %}>
+                                {{ rate.rate }}{% if rate != "-" %} (n={{ rate.count }}){% else %}-{% endif %}
+                            </td>
+                        {% endfor %}
+                        <td class="pct-cell"
+                            {% if totals.rolling_avg != "—" %}
+                                {% with pct_value=totals.rolling_avg|slice:":-1"|floatformat:1 %}
+                                    data-pct="{{ pct_value }}"
+                                {% endwith %}
+                            {% endif %}>{{ totals.rolling_avg }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Unknown cows table -->
+<div class="card">
+    <div class="card-header fw-semibold">Unknown Cow Preg Checks</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered mb-0">
+                <thead class="table-light">
+                    <tr>
+                        {% for season in seasons %}
+                            <th>{{ season }}</th>
+                        {% endfor %}
+                        <th>Rolling Avg</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in no_cow_rows %}
+                    <tr>
+                        {% for rate in row.season_rates %}
+                            <td class="pct-cell"
+                                {% if rate != "—" %}
+                                    {% with pct_value=rate.rate|slice:":-1"|floatformat:1 %}
+                                        data-pct="{{ pct_value }}"
+                                    {% endwith %}
+                                {% endif %}>
+                                {{ rate.rate }}{% if rate != "—" %} (n={{ rate.count }}){% else %}-{% endif %}
+                            </td>
+                        {% endfor %}
+                        <td class="rolling-avg-cell pct-cell"
+                            {% if row.rolling_avg != "—" %}
+                                {% with pct_value=row.rolling_avg|slice:":-1"|floatformat:1 %}
+                                    data-pct="{{ pct_value }}"
+                                {% endwith %}
+                            {% endif %}>{{ row.rolling_avg }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% else %}
+<div class="alert alert-secondary">
+    No data available for this report. Please ensure pregnancy check records exist in the system.
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function applyThresholdColoring() {
+        const highThreshold = parseFloat(document.getElementById('high_threshold').value);
+        const lowThreshold  = parseFloat(document.getElementById('low_threshold').value);
+        document.querySelectorAll('.pct-cell[data-pct]').forEach(cell => {
+            const pct = parseFloat(cell.getAttribute('data-pct'));
+            cell.classList.remove('high-pct', 'low-pct');
+            if (pct >= highThreshold)    cell.classList.add('high-pct');
+            else if (pct < lowThreshold) cell.classList.add('low-pct');
         });
-        document.getElementById('low_threshold').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-            }
-        });
-    </script>
-</body>
-</html>
+    }
+    document.addEventListener('DOMContentLoaded', applyThresholdColoring);
+    ['high_threshold', 'low_threshold'].forEach(id => {
+        const el = document.getElementById(id);
+        el.addEventListener('change',  applyThresholdColoring);
+        el.addEventListener('input',   applyThresholdColoring);
+        el.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
+    });
+</script>
+{% endblock %}

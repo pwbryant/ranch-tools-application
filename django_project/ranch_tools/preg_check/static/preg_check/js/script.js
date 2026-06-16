@@ -111,6 +111,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
 
                 const table = document.createElement('table');
+                table.className = 'table table-sm table-bordered table-hover';
                 const thead = document.createElement('thead');
                 thead.innerHTML = '<tr><th>Cow ID</th><th>Birth Year</th><th>Pregnant</th></tr>';
                 table.appendChild(thead);
@@ -179,7 +180,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
                     // Populate stats content
                     entriesContainer.innerHTML = `
-                        <table>
+                        <table class="table table-sm table-bordered">
                             <thead>
                                 <tr>
                                     <th>Group</th>

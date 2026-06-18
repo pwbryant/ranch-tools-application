@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const row = document.createElement('tr');
                     row.innerHTML = `
                         <td>${p.ear_tag_id}</td>
-                        <td>${p.birth_year}</td>
+                        <td>${p.animal_birth_year}</td>
                         <td>${p.is_pregnant ? 'Yes' : 'No'}</td>
                     `;
                     row.style.cursor = 'pointer';

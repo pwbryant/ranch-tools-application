@@ -124,7 +124,8 @@ class DatabaseManagementView(View, InitialzeDatabaseMixin):
             return redirect('database_management')
 
         try:
-            PregCheckImportService().import_from_file(uploaded_file, dry_run=False)
+            with open(temp_path, 'rb') as f:
+                PregCheckImportService().import_from_file(f, dry_run=False)
         except ValidationError as e:
             messages.error(request, mark_safe(f'Import failed: {str(e)}'))
 

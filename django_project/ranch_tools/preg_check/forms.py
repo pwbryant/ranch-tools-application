@@ -45,7 +45,7 @@ class PregCheckForm(forms.ModelForm):
         widgets = {
             'is_pregnant': forms.RadioSelect(choices=((True, 'Pregnant'), (False, 'Open'))),
             'breeding_season': forms.TextInput(attrs={'pattern': r'\d{4}', 'title': 'Please enter a four-digit year'}),
-            'comments': forms.Textarea,
+            'comments': forms.Textarea(attrs={'rows': 2}),
         }
 
 

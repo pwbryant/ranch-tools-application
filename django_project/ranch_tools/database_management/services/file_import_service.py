@@ -118,7 +118,6 @@ class PregCheckImportService:
         """
         # Check for missing columns
         self.assert_required_columns(df)
-        
         # Check for empty values in required fields
         required_fields = ['check_date', 'is_pregnant']
         for field in required_fields:
@@ -157,7 +156,15 @@ class PregCheckImportService:
             error_list = '<ul>' + ''.join(f'<li>{d}</li>' for d in duplicates) + '</ul>'
             error_msg = mark_safe(f'Found {len(duplicates)} duplicate records:<br>{error_list}')
             raise ValidationError(error_msg)
-    
+        
+        # check for cows with missing birth_years
+        self._check_for_missing_birth_years(df_check)
+
+    def _check_for_missing_birth_years(self, df):
+        cow_filter = (~df.ear_tag_id.isna() | ~df.eid.isna()) & df.birth_year.isna()
+        if len(df[cow_filter]):
+            self.stats['errors'].append('Cows without birth year detected')
+
     def _check_duplicates_by_ear_tag(self, df_check: pd.DataFrame) -> list[str]:
         """
         Check for duplicate records based on ear_tag_id, birth_year, and check_date.
@@ -260,6 +267,7 @@ class PregCheckImportService:
         Returns:
             Dictionary with cleaned cow data
         """
+        logger.info(f'processing row: {row}')
         return {
             'ear_tag_id': str(row['ear_tag_id']).strip() if pd.notna(row['ear_tag_id']) else '',
             'birth_year': int(row['birth_year']) if pd.notna(row['birth_year']) else None,
@@ -370,7 +378,7 @@ class PregCheckImportService:
             ImportError: If the import fails
         """
         self.reset_stats()
-        
+        logger.info('import from file')
         try:
             # Read Excel file with ear_tag_id and eid as strings to preserve leading zeros
             if '.csv' in getattr(file, 'name', '').lower():
@@ -403,7 +411,6 @@ class PregCheckImportService:
                 # Rollback if dry run
                 if dry_run:
                     transaction.set_rollback(True)
-            
             return self.stats
             
         except pd.errors.EmptyDataError:

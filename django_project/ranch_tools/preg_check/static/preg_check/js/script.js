@@ -287,11 +287,13 @@ document.addEventListener('DOMContentLoaded', function() {
             messageContainer.textContent = 'If Ear Tag ID and RFID is blank, you must check "No ID".';
             messageContainer.classList.add('error');
             modal.style.display = 'block';
+            submitButton.disabled = false;
             return;
         } else if ((earTagIdValue || rfidValue) && noIdChecked) {
             messageContainer.textContent = 'If Ear Tag ID or RFID is provided, "No ID" should not be checked.';
             messageContainer.classList.add('error');
             modal.style.display = 'block';
+            submitButton.disabled = false;
             return;
         }
         // If "No ID" is checked and both ear tag and rfid are blank, clear birth year input

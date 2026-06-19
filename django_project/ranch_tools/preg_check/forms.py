@@ -85,7 +85,7 @@ class EditPregCheckForm(forms.ModelForm):
     birth_year = forms.IntegerField(validators=[
         MinValueValidator(1000),
         MaxValueValidator(9999)
-    ])
+    ], required=False)
     breeding_season = forms.IntegerField(validators=[
         MinValueValidator(1000),
         MaxValueValidator(9999)
@@ -107,13 +107,19 @@ class EditPregCheckForm(forms.ModelForm):
         if self.errors:
             return cleaned_data
 
+        recheck = cleaned_data.get('recheck')
         ear_tag_id = cleaned_data.get('ear_tag_id')
         birth_year = cleaned_data.get('birth_year')
         new_cow = cleaned_data.get('new_cow', False)
 
+        if new_cow and recheck:
+            raise ValidationError("Cannot mark as recheck: no previous non-recheck PregCheck")
+
         # Skip existence check if user intends to create a new cow
         if new_cow:
             return cleaned_data
+
+        cow = None
         if ear_tag_id and birth_year:
             try:
                 cow = Cow.objects.get(ear_tag_id=ear_tag_id, birth_year=birth_year)
@@ -124,6 +130,18 @@ class EditPregCheckForm(forms.ModelForm):
                 cow = Cow.objects.get(ear_tag_id=ear_tag_id)
             except Cow.DoesNotExist:
                 raise ValidationError(f"No cow found with ear_tag_id {ear_tag_id}")
+
+        if recheck and cow is not None:
+            breeding_season = cleaned_data['breeding_season']
+            previous_pregchecks = PregCheck.objects.filter(
+                cow=cow,
+                breeding_season=breeding_season,
+            ).order_by('check_date')
+            if str(previous_pregchecks[0].id) == self.data['pregcheck_id']:
+                raise ValidationError(
+                    "Cannot mark as recheck: no previous non-recheck PregCheck "
+                    f"found for {cow} in breeding season {breeding_season}"
+                )
 
         return cleaned_data
 

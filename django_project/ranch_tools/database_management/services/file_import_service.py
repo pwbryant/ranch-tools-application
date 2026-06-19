@@ -165,7 +165,7 @@ class PregCheckImportService:
         if len(df[cow_filter]):
             self.stats['errors'].append('Cows without birth year detected')
 
-    def _check_duplicates_by_ear_tag(self, df_check: pd.DataFrame) -> list[str]:
+    def _check_duplicates_by_ear_tag(self, df_check: pd.DataFrame) -> list[str] | None:
         """
         Check for duplicate records based on ear_tag_id, birth_year, and check_date.
         

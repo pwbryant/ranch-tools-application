@@ -830,15 +830,19 @@ class PregCheckEditView(View):
             return JsonResponse({'error': 'PregCheck not found'}, status=404)
 
         form = EditPregCheckForm(request.POST, instance=pregcheck)
+        errors = {'form': []}
         if form.is_valid():
-            form.save()
-            return JsonResponse({'success': 'PregCheck updated successfully'})
+            try:
+                form.save()
+                return JsonResponse({'success': 'PregCheck updated successfully'})
+            except Exception:
+                errors['form'] = ['An unexpected error occurred while updating PregCheck.  Check form fields for missing/invalid values.']
+                return JsonResponse({'errors': errors}, status=400)
         else:
             # Return form errors as JSON for AJAX
-            errors = {}
             for field, field_errors in form.errors.items():
                 if field == '__all__':
-                    errors['form'] = list(field_errors)
+                    errors['form'] += list(field_errors)
                 else:
                     errors[field] = list(field_errors)
             return JsonResponse({'errors': errors}, status=400)

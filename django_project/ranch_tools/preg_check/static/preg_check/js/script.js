@@ -17,6 +17,31 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    function clearEditPregCheckForm() {
+        var form = document.getElementById('edit-pregcheck-form');
+        if (!form) {
+            return;
+        }
+
+        Array.from(form.elements).forEach(function(element) {
+            switch (element.type) {
+                case 'hidden':
+                case 'submit':
+                    break;
+                case 'checkbox':
+                case 'radio':
+                    element.checked = false;
+                    break;
+                case 'select-one':
+                case 'select-multiple':
+                    element.selectedIndex = -1;
+                    break;
+                default:
+                    element.value = '';
+            }
+        });
+    }
+
     // Function for handling Edit Cow Modal
     function handleEditCowModal() {
         var modal = document.getElementById("editCowModal");
@@ -335,6 +360,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (formErrorsDiv) {
 			formErrorsDiv.style.display = 'none';
 		}
+
+        clearEditPregCheckForm();
 	}
 
 	function closeEditCowModal() {
@@ -601,12 +628,15 @@ document.addEventListener('DOMContentLoaded', function() {
         event.preventDefault(); // Prevent normal form submission
         
         const formData = new FormData(this);
+        // Log FormData entries for debugging
+        for (const pair of formData.entries()) {
+            console.log(pair[0] + ':', pair[1]);
+        }
         const pregcheckId = document.getElementById('edit-pregcheck-id').value;
         const errorContainer = document.querySelector('#form-errors .error-message');
         
         // Clear previous errors
         errorContainer.innerHTML = '';
-        
         fetch(`/pregchecks/${pregcheckId}/edit/`, {
             method: 'POST',
             body: formData,

@@ -165,7 +165,7 @@ class PregCheckImportService:
         if len(df[cow_filter]):
             self.stats['errors'].append('Cows without birth year detected')
 
-    def _check_duplicates_by_ear_tag(self, df_check: pd.DataFrame) -> list[str] | None:
+    def _check_duplicates_by_ear_tag(self, df_check: pd.DataFrame) -> list[str]:
         """
         Check for duplicate records based on ear_tag_id, birth_year, and check_date.
         
@@ -187,7 +187,7 @@ class PregCheckImportService:
         
         # Only check for duplicates if we have rows with complete data
         if df_check_filtered.empty:
-            return
+            return []
         
         # Find duplicates in the filtered data
         duplicates = df_check_filtered[df_check_filtered.duplicated(subset=duplicate_columns, keep=False)]
@@ -234,7 +234,7 @@ class PregCheckImportService:
         
         # Only check for duplicates if we have rows with complete data
         if df_check_filtered.empty:
-            return
+            return []
         
         # Find duplicates in the filtered data
         duplicates = df_check_filtered[df_check_filtered.duplicated(subset=duplicate_columns, keep=False)]

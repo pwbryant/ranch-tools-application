@@ -470,7 +470,10 @@ def get_preg_check_pregnancy_info(preg_checks) -> dict:
 
     herd_size = len(cow_pregcheck_info_dict) # key for each unique cow
     
-    pct_pregnant = preg_recheck_count / herd_size * 100
+    if herd_size:
+        pct_pregnant = preg_recheck_count / herd_size * 100
+    else:
+        pct_pregnant = 0
 
     return {
         'first_pass_open': first_pass_open_count,

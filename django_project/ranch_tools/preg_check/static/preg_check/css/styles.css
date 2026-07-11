@@ -71,13 +71,26 @@ input[readonly] {
     border: none;
     font-size: 1.5rem;
     line-height: 1;
-    color: #000;
-    opacity: 0.5;
+    color: #dc3545;
+    opacity: 0.75;
     cursor: pointer;
     padding: 0;
 }
 .close:hover {
-    opacity: 0.75;
+    opacity: 1;
+}
+
+/* Light red style for "negate" actions (cancel / clear / close) */
+.btn-light-red {
+    background-color: #f8d7da;
+    border-color: #f5c2c7;
+    color: #842029;
+}
+.btn-light-red:hover,
+.btn-light-red:focus {
+    background-color: #f5c2c7;
+    border-color: #f1aeb5;
+    color: #842029;
 }
 
 /* ----------------------------------------------------------

@@ -23,12 +23,12 @@
     <div class="d-grid gap-2 mt-3">
         <button type="submit" class="btn btn-primary btn-sm">Search For Animal</button>
         {% if animal_exists and not multiple_matches %}
-            <button id="edit-cow-btn" type="button" class="btn btn-outline-secondary btn-sm">Edit Cow</button>
-            <button id="create-cow-btn" type="button" class="btn btn-outline-secondary btn-sm">
+            <button id="edit-cow-btn" type="button" class="btn btn-primary btn-sm">Edit Cow</button>
+            <button id="create-cow-btn" type="button" class="btn btn-primary btn-sm">
                 Create New Cow: "{{ cow.ear_tag_id }}"
             </button>
         {% endif %}
-        <button id="clear-search-form" type="button" class="btn btn-outline-danger btn-sm">Clear</button>
+        <button id="clear-search-form" type="button" class="btn btn-light-red btn-sm">Clear</button>
     </div>
 
 </form>

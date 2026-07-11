@@ -68,7 +68,7 @@
                     {% csrf_token %}
                     <input type="hidden" name="create_backup" value="1">
                     <input type="hidden" name="backup_path" id="backupPath" value="">
-                    <button type="button" id="backupBtn" class="btn btn-secondary">
+                    <button type="button" id="backupBtn" class="btn btn-primary">
                         Create Backup
                     </button>
                 </form>
@@ -82,7 +82,7 @@
             <div class="card-header fw-semibold">Export Database to Excel</div>
             <div class="card-body">
                 <p class="text-muted small">Download all records as an Excel file.</p>
-                <a href="?export=true&include_empty=false" class="btn btn-outline-primary">
+                <a href="?export=true&include_empty=false" class="btn btn-primary">
                     Export Database
                 </a>
             </div>

@@ -499,11 +499,17 @@ class PregCheckReportFive(View):
         else:
             breeding_season = CurrentBreedingSeason.load().breeding_season
 
+        # Echo the coloring thresholds back so they survive an auto-submit reload.
+        low_threshold = request.GET.get('low_threshold', '80')
+        high_threshold = request.GET.get('high_threshold', '90')
+
         all_breeding_season_cows = PregCheck.objects.filter(breeding_season=breeding_season)
 
         if all_breeding_season_cows.count() == 0:
             context = {
                 'breeding_season': breeding_season,
+                'low_threshold': low_threshold,
+                'high_threshold': high_threshold,
                 'rows': [],
                 'totals': {},
             }
@@ -533,6 +539,8 @@ class PregCheckReportFive(View):
         totals_row['is_totals'] = True
         context = {
             'breeding_season': breeding_season,
+            'low_threshold': low_threshold,
+            'high_threshold': high_threshold,
             'rows': rows,
             'totals': totals_row,
             'no_cow_row': no_cow_row
@@ -583,13 +591,20 @@ class PregCheckRollingAverageReport(View):
         breeding_season = request.GET.get('breeding_season')
         if not breeding_season:
             breeding_season = CurrentBreedingSeason.load().breeding_season
-        
+
+        # Echo the coloring thresholds back so they survive an auto-submit reload.
+        low_threshold = request.GET.get('low_threshold', '80')
+        high_threshold = request.GET.get('high_threshold', '90')
+
         # Get breeding seasons
         seasons_list = self._get_breeding_seasons(breeding_season)
         if not seasons_list:
             return render(request, 'preg_check/rolling-average-report.html', {
                 'seasons': [],
                 'rows': [],
+                'breeding_season': breeding_season,
+                'low_threshold': low_threshold,
+                'high_threshold': high_threshold,
             })
         
         # Calculate pregnancy rates by season and age
@@ -603,6 +618,9 @@ class PregCheckRollingAverageReport(View):
             return render(request, 'preg_check/rolling-average-report.html', {
                 'seasons': seasons_list,
                 'rows': [],
+                'breeding_season': breeding_season,
+                'low_threshold': low_threshold,
+                'high_threshold': high_threshold,
             })
         
         # Build report rows
@@ -617,7 +635,9 @@ class PregCheckRollingAverageReport(View):
             'rows': rows_for_pregchecks_with_cows,
             'no_cow_rows': rows_for_pregchecks_with_NO_cows,
             'totals': totals_row_for_pregchecks_with_cows,
-            'breeding_season': breeding_season
+            'breeding_season': breeding_season,
+            'low_threshold': low_threshold,
+            'high_threshold': high_threshold,
         }
         return render(request, 'preg_check/rolling-average-report.html', context)
 

@@ -20,20 +20,19 @@
             <div class="col-auto">
                 <label for="breeding_season" class="form-label fw-semibold small">Breeding Season</label>
                 <input type="text" class="form-control form-control-sm" id="breeding_season"
-                       name="breeding_season" value="{{ breeding_season }}" style="width:90px">
+                       name="breeding_season" value="{{ breeding_season }}"
+                       placeholder="YYYY" maxlength="4" pattern="\d{4}"
+                       title="Enter a 4-digit year" style="width:90px">
             </div>
             <div class="col-auto">
                 <label for="low_threshold" class="form-label fw-semibold small">Yellow threshold (&lt;%)</label>
                 <input type="number" class="form-control form-control-sm" id="low_threshold"
-                       name="low_threshold" value="80" min="0" max="100" step="0.1" style="width:80px">
+                       name="low_threshold" value="{{ low_threshold }}" min="0" max="100" step="0.1" style="width:80px">
             </div>
             <div class="col-auto">
                 <label for="high_threshold" class="form-label fw-semibold small">Green threshold (&ge;%)</label>
                 <input type="number" class="form-control form-control-sm" id="high_threshold"
-                       name="high_threshold" value="90" min="0" max="100" step="0.1" style="width:80px">
-            </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary btn-sm">Update</button>
+                       name="high_threshold" value="{{ high_threshold }}" min="0" max="100" step="0.1" style="width:80px">
             </div>
         </form>
     </div>
@@ -171,7 +170,28 @@
         const el = document.getElementById(id);
         el.addEventListener('change',  applyThresholdColoring);
         el.addEventListener('input',   applyThresholdColoring);
-        el.addEventListener('keydown', e => { if (e.key === 'Enter') e.preventDefault(); });
+    });
+
+    // Auto-submit the filter form when a value changes and the user clicks out or presses Enter.
+    const filterInputs = ['breeding_season', 'low_threshold', 'high_threshold']
+        .map(id => document.getElementById(id))
+        .filter(Boolean);
+    const initialValues = {};
+    filterInputs.forEach(el => { initialValues[el.id] = el.value.trim(); });
+
+    function maybeSubmit(el) {
+        const value = el.value.trim();
+        // Breeding season must be a full 4-digit year before we reload.
+        if (el.id === 'breeding_season' && !/^\d{4}$/.test(value)) return;
+        if (value === initialValues[el.id]) return;  // nothing changed, skip the reload
+        el.form.submit();
+    }
+
+    filterInputs.forEach(el => {
+        el.addEventListener('blur', () => maybeSubmit(el));
+        el.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); maybeSubmit(el); }
+        });
     });
 </script>
 {% endblock %}

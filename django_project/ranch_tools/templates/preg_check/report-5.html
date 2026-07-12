@@ -11,31 +11,28 @@
 <!-- Filter form -->
 <div class="card mb-4">
     <div class="card-body">
-        <div class="d-flex justify-content-between align-items-end">
-            <form method="get" action="" class="d-flex align-items-end">
-                <div class="me-2">
-                    <label for="breeding_season" class="form-label fw-semibold small">Breeding Season</label>
-                    <input type="text" class="form-control form-control-sm" id="breeding_season"
-                           name="breeding_season" value="{{ breeding_season }}" style="width:90px">
-                </div>
-                <div>
-                    <button type="submit" class="btn btn-primary btn-sm">Update Breeding Season</button>
-                </div>
-            </form>
+        <form method="get" action="" class="d-flex justify-content-between align-items-end">
+            <div class="me-2">
+                <label for="breeding_season" class="form-label fw-semibold small">Breeding Season</label>
+                <input type="text" class="form-control form-control-sm" id="breeding_season"
+                       name="breeding_season" value="{{ breeding_season }}"
+                       placeholder="YYYY" maxlength="4" pattern="\d{4}"
+                       title="Enter a 4-digit year" style="width:90px">
+            </div>
 
             <div class="d-flex">
                 <div class="me-3 text-end">
                     <label for="low_threshold" class="form-label fw-semibold small">Yellow threshold (&lt;%)</label>
                     <input type="number" class="form-control form-control-sm d-inline-block" id="low_threshold"
-                           name="low_threshold" value="80" min="0" max="100" style="width:80px">
+                           name="low_threshold" value="{{ low_threshold }}" min="0" max="100" style="width:80px">
                 </div>
                 <div class="text-end">
                     <label for="high_threshold" class="form-label fw-semibold small">Green threshold (&ge;%)</label>
                     <input type="number" class="form-control form-control-sm d-inline-block" id="high_threshold"
-                           name="high_threshold" value="90" min="0" max="100" style="width:80px">
+                           name="high_threshold" value="{{ high_threshold }}" min="0" max="100" style="width:80px">
                 </div>
             </div>
-        </div>
+        </form>
     </div>
 </div>
 
@@ -143,6 +140,28 @@
     ['high_threshold', 'low_threshold'].forEach(id => {
         document.getElementById(id).addEventListener('change', applyThresholdColoring);
         document.getElementById(id).addEventListener('input',  applyThresholdColoring);
+    });
+
+    // Auto-submit the filter form when a value changes and the user clicks out or presses Enter.
+    const filterInputs = ['breeding_season', 'low_threshold', 'high_threshold']
+        .map(id => document.getElementById(id))
+        .filter(Boolean);
+    const initialValues = {};
+    filterInputs.forEach(el => { initialValues[el.id] = el.value.trim(); });
+
+    function maybeSubmit(el) {
+        const value = el.value.trim();
+        // Breeding season must be a full 4-digit year before we reload.
+        if (el.id === 'breeding_season' && !/^\d{4}$/.test(value)) return;
+        if (value === initialValues[el.id]) return;  // nothing changed, skip the reload
+        el.form.submit();
+    }
+
+    filterInputs.forEach(el => {
+        el.addEventListener('blur', () => maybeSubmit(el));
+        el.addEventListener('keydown', e => {
+            if (e.key === 'Enter') { e.preventDefault(); maybeSubmit(el); }
+        });
     });
 </script>
 {% endblock %}

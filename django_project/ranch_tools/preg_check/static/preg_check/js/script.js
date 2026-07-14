@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Create header text
                     const headerText = document.createElement('span');
                     headerText.className = 'header-text';
-                    headerText.textContent = 'New Summary Stats';
+                    headerText.textContent = 'Summary Stats';
                     headerContainer.appendChild(headerText);
     
                     // Create a container for the stats entries
@@ -217,12 +217,12 @@ document.addEventListener('DOMContentLoaded', function() {
                                 <tr>
                                     <td>With ID</td>
                                     <td>${data.total_count}</td>
-                                    <td>${data.pregnancy_rate.toFixed(2)}</td>
+                                    <td>${data.pregnancy_rate.toFixed(1)}</td>
                                 </tr>
                                 <tr>
-                                    <td>Without ID</td>
+                                    <td>No ID</td>
                                     <td>${data.total_no_cow_count}</td>
-                                    <td>${data.no_cow_pregnancy_rate.toFixed(2)}</td>
+                                    <td>${data.no_cow_pregnancy_rate.toFixed(1)}</td>
                                 </tr>
                             </tbody>
                         </table>

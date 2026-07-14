@@ -81,7 +81,7 @@
                 {% if totals %}
                 <tr class="totals-row">
                     <td>{{ totals.cow_birth_year }}</td>
-                    <td>{{ totals.age }}</td>
+                    <td></td>
                     <td>{{ totals.first_pass_open }}</td>
                     <td>{{ totals.first_pass_pregnant }}</td>
                     <td>{{ totals.first_pass_total }}</td>
@@ -94,36 +94,29 @@
                         {% endwith %}>{{ totals.pct_pregnant }}</td>
                 </tr>
                 {% endif %}
+                <tr class="spacer-row">
+                    <td colspan="9" style="height: 1.5rem;">&nbsp;</td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td>No ID</td>
+                    <td>{{ no_cow_row.net_open }}</td>
+                    <td>{{ no_cow_row.net_pregnant }}</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                   <td class="pct-cell"
+                        {% with pct_value=no_cow_row.pct_pregnant|slice:":-1"|floatformat:0 %}
+                            data-pct="{{ pct_value }}"
+                        {% endwith %}>{{ no_cow_row.pct_pregnant }}</td>
+                </tr>
+
             </tbody>
         </table>
     </div>
 </div>
 
-<!-- Unknown cows table -->
-<div class="card">
-    <div class="card-header fw-semibold">Pregnancy Rate — Unknown Cows</div>
-    <div class="card-body p-0">
-        <table class="table table-sm table-bordered mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th>Open</th>
-                    <th>Pregnant</th>
-                    <th>% Pregnant</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>{{ no_cow_row.net_open }}</td>
-                    <td>{{ no_cow_row.net_pregnant }}</td>
-                    <td class="pct-cell"
-                        {% with pct_value=no_cow_row.pct_pregnant|slice:":-1"|floatformat:0 %}
-                            data-pct="{{ pct_value }}"
-                        {% endwith %}>{{ no_cow_row.pct_pregnant }}</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
 
 {% endblock %}
 

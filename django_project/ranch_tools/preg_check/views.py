@@ -834,7 +834,7 @@ class ReportsHubView(View):
                 'description': 'Detailed breakdown of pregnancy status by cow birth year/age class for the selected breeding season.'
             },
             {
-                'name': 'Rolling Average Report',
+                'name': 'Pregnancy Rate by Cow age across Years',
                 'url': 'pregcheck-rolling-average-report',
                 'description': 'Four-year rolling average pregnancy rates for each age class across the herd.'
             },

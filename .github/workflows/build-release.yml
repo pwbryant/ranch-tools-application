@@ -13,7 +13,7 @@ jobs:
     
     strategy:
       matrix:
-        os: [windows-latest, macos-latest]
+        os: [windows-latest]  # macos-latest disabled
     
     steps:
       - name: Checkout code
@@ -62,25 +62,25 @@ jobs:
           # Install Django requirements
           .\python.exe -m pip install --target . -r ..\..\django_project\requirements.txt
       
-      - name: Download Python for macOS
-        if: matrix.os == 'macos-latest'
-        working-directory: ./electron_wrapper
-        shell: bash
-        run: |
-          mkdir -p python-embed/bin
-          # Download Python framework installer
-          curl -o python-installer.pkg https://www.python.org/ftp/python/3.9.13/python-3.9.13-macos11.pkg
-          sudo installer -pkg python-installer.pkg -target /
-          # Copy Python to embed directory
-          cp -r /Library/Frameworks/Python.framework/Versions/3.9/* python-embed/
-      
-      - name: Install Python packages (macOS)
-        if: matrix.os == 'macos-latest'
-        working-directory: ./electron_wrapper/python-embed
-        shell: bash
-        run: |
-          ./bin/python3 -m pip install --target ./lib/python3.9/site-packages -r ../../django_project/requirements.txt
-      
+      # - name: Download Python for macOS
+      #   if: matrix.os == 'macos-latest'
+      #   working-directory: ./electron_wrapper
+      #   shell: bash
+      #   run: |
+      #     mkdir -p python-embed/bin
+      #     # Download Python framework installer
+      #     curl -o python-installer.pkg https://www.python.org/ftp/python/3.9.13/python-3.9.13-macos11.pkg
+      #     sudo installer -pkg python-installer.pkg -target /
+      #     # Copy Python to embed directory
+      #     cp -r /Library/Frameworks/Python.framework/Versions/3.9/* python-embed/
+      #
+      # - name: Install Python packages (macOS)
+      #   if: matrix.os == 'macos-latest'
+      #   working-directory: ./electron_wrapper/python-embed
+      #   shell: bash
+      #   run: |
+      #     ./bin/python3 -m pip install --target ./lib/python3.9/site-packages -r ../../django_project/requirements.txt
+
       - name: Update main.js for cross-platform
         working-directory: ./electron_wrapper
         shell: bash
@@ -109,20 +109,20 @@ jobs:
         shell: bash
         run: npm run build-win
 
-      - name: Fix macOS permissions
-        if: matrix.os == 'macos-latest'
-        working-directory: ./electron_wrapper
-        shell: bash
-        run: |
-          chmod -R 755 python-embed/bin/* || true
-          chmod -R 755 django_project || true
+      # - name: Fix macOS permissions
+      #   if: matrix.os == 'macos-latest'
+      #   working-directory: ./electron_wrapper
+      #   shell: bash
+      #   run: |
+      #     chmod -R 755 python-embed/bin/* || true
+      #     chmod -R 755 django_project || true
+      #
+      # - name: Build Electron app (macOS)
+      #   if: matrix.os == 'macos-latest'
+      #   working-directory: ./electron_wrapper
+      #   shell: bash
+      #   run: npm run build-mac
 
-      - name: Build Electron app (macOS)
-        if: matrix.os == 'macos-latest'
-        working-directory: ./electron_wrapper
-        shell: bash
-        run: npm run build-mac
-        
       - name: Upload Windows artifacts
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
@@ -130,12 +130,12 @@ jobs:
           name: ranch-tools-windows
           path: electron_wrapper/dist/*.exe
       
-      - name: Upload macOS artifacts
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ranch-tools-macos
-          path: electron_wrapper/dist/*.zip
+      # - name: Upload macOS artifacts
+      #   if: matrix.os == 'macos-latest'
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: ranch-tools-macos
+      #     path: electron_wrapper/dist/*.zip
 
   release:
     needs: build
@@ -149,18 +149,18 @@ jobs:
           name: ranch-tools-windows
           path: ./windows-release
       
-      - name: Download macOS artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: ranch-tools-macos
-          path: ./macos-release
-      
+      # - name: Download macOS artifacts
+      #   uses: actions/download-artifact@v4
+      #   with:
+      #     name: ranch-tools-macos
+      #     path: ./macos-release
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           files: |
             ./windows-release/*
-            ./macos-release/*
+            # ./macos-release/*
           draft: false
           prerelease: false
         env:

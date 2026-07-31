@@ -126,8 +126,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 entriesContainer.id = 'pregcheck-entries';
                 content.appendChild(entriesContainer);
 
-                // Toggle functionality
-                let isVisible = true;
+                // Toggle functionality (collapsed by default)
+                let isVisible = false;
+                entriesContainer.style.display = 'none';
+                toggleIcon.innerHTML = '▶';
                 headerContainer.onclick = () => {
                     isVisible = !isVisible;
                     entriesContainer.style.display = isVisible ? 'block' : 'none';
@@ -195,8 +197,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     entriesContainer.id = 'stats-entries';
                     content.appendChild(entriesContainer);
     
-                    // Toggle functionality
-                    let isVisible = true;
+                    // Toggle functionality (collapsed by default)
+                    let isVisible = false;
+                    entriesContainer.style.display = 'none';
+                    toggleIcon.innerHTML = '▶';
                     headerContainer.onclick = () => {
                         isVisible = !isVisible;
                         entriesContainer.style.display = isVisible ? 'block' : 'none';
@@ -609,10 +613,10 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Event listener for "edit" buttons
-    document.querySelectorAll('.edit-button').forEach(button => {
-        button.addEventListener('click', () => {
-            const pregcheckId = button.getAttribute('data-pregcheck-id');
+    // Event listener for clickable pregcheck rows
+    document.querySelectorAll('.pregcheck-row').forEach(row => {
+        row.addEventListener('click', () => {
+            const pregcheckId = row.getAttribute('data-pregcheck-id');
             // Make an AJAX request to fetch data for the selected pregcheck
             fetch(`/pregchecks/${pregcheckId}/`)
                 .then(response => response.json())

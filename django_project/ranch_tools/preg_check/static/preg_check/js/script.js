@@ -139,6 +139,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 const table = document.createElement('table');
                 table.className = 'table table-sm table-bordered table-hover';
+                table.id = 'pregcheck-entries-table';
                 const thead = document.createElement('thead');
                 thead.innerHTML = '<tr><th>Cow ID</th><th>Birth Year</th><th>Pregnant</th></tr>';
                 table.appendChild(thead);

@@ -1,6 +1,6 @@
 {% load static %}
 {% load custom_filters %}
-<div class="result-container">
+<div class="result-container"{% if pregchecks|length > 5 %} style="max-height: 400px; overflow-y: auto;"{% endif %}>
     {% if multiple_matches %}
         <div class="alert alert-warning">
             More than one animal is associated with this ID with birth years of

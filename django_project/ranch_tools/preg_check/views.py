@@ -175,6 +175,16 @@ class PregCheckListView(ListView, InitialzeDatabaseMixin):
         context['multiple_matches'] = animal_count > 1
         context['distinct_birth_years'] = distinct_birth_years
         context['cow'] = cow
+
+        context['cow_id'] = ''
+        ear_tag_id = self.request.GET.get('search_ear_tag_id', '')
+        rfid = self.request.GET.get('search_rfid')
+
+        if cow and ear_tag_id:
+            context['cow_id'] = ear_tag_id
+        elif cow and rfid:
+            context['cow_id'] = rfid
+
         context['recheck'] = is_recheck
         return context
 
@@ -521,7 +531,6 @@ class PregCheckReportFive(View):
         all_pregchecks_with_cow = all_pregchecks_with_cow.annotate(cow_age=breeding_season-models.F('cow__birth_year'))
 
         cow_ages = sorted(all_pregchecks_with_cow.values_list('cow_age', flat=True).distinct())
-        cow_ages
         rows = []
         for age in cow_ages:
             birth_year = breeding_season - age

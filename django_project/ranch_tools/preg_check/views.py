@@ -568,6 +568,7 @@ class PregCheckReportFive(View):
         return {
             'net_open': open_count, 
             'net_pregnant': pregnant_count,
+            'first_pass_total': open_count + pregnant_count,
             'pct_pregnant': f"{pct_pregnant:.1f}%",
         }
 

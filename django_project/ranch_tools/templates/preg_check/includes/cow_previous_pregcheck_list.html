@@ -21,6 +21,7 @@
                             {% endif %}
                             <th>Preg Status</th>
                             <th>Check Date</th>
+                            <th>Breeding Season</th>
                             {% if pregchecks|has_comments %}
                                 <th>Comments</th>
                             {% endif %}
@@ -42,6 +43,7 @@
                                     {% endif %}
                                 </td>
                                 <td>{{ pregcheck.check_date }}</td>
+                                <td>{{ pregcheck.breeding_season }}
                                 {% if pregchecks|has_comments %}
                                     <td>{{ pregcheck.comments }}</td>
                                 {% endif %}

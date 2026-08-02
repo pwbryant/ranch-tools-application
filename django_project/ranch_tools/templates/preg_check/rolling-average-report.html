@@ -99,46 +99,29 @@
                             {% endif %}>{{ totals.rolling_avg }}</td>
                     </tr>
                     {% endif %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<!-- Unknown cows table -->
-<div class="card">
-    <div class="card-header fw-semibold">Unknown Cow Preg Checks</div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-sm table-bordered mb-0">
-                <thead class="table-light">
-                    <tr>
-                        {% for season in seasons %}
-                            <th>{{ season }}</th>
-                        {% endfor %}
-                        <th>Rolling Avg</th>
+                    <tr class="spacer-row">
+                        <td colspan="9" style="height: 1.5rem;">&nbsp;</td>
                     </tr>
-                </thead>
-                <tbody>
                     {% for row in no_cow_rows %}
-                    <tr>
-                        {% for rate in row.season_rates %}
-                            <td class="pct-cell"
-                                {% if rate != "—" %}
-                                    {% with pct_value=rate.rate|slice:":-1"|floatformat:1 %}
+                        <tr>
+                            <td>No ID</td>
+                            {% for rate in row.season_rates %}
+                                <td class="pct-cell"
+                                    {% if rate != "—" %}
+                                        {% with pct_value=rate.rate|slice:":-1"|floatformat:1 %}
+                                            data-pct="{{ pct_value }}"
+                                        {% endwith %}
+                                    {% endif %}>
+                                    {{ rate.rate }}{% if rate != "—" %} (n={{ rate.count }}){% else %}-{% endif %}
+                                </td>
+                            {% endfor %}
+                            <td class="rolling-avg-cell pct-cell"
+                                {% if row.rolling_avg != "—" %}
+                                    {% with pct_value=row.rolling_avg|slice:":-1"|floatformat:1 %}
                                         data-pct="{{ pct_value }}"
                                     {% endwith %}
-                                {% endif %}>
-                                {{ rate.rate }}{% if rate != "—" %} (n={{ rate.count }}){% else %}-{% endif %}
-                            </td>
-                        {% endfor %}
-                        <td class="rolling-avg-cell pct-cell"
-                            {% if row.rolling_avg != "—" %}
-                                {% with pct_value=row.rolling_avg|slice:":-1"|floatformat:1 %}
-                                    data-pct="{{ pct_value }}"
-                                {% endwith %}
-                            {% endif %}>{{ row.rolling_avg }}</td>
-                    </tr>
+                                {% endif %}>{{ row.rolling_avg }}</td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>

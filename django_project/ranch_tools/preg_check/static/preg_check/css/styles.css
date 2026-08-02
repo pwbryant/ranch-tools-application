@@ -54,6 +54,21 @@ input[readonly] {
 }
 
 /* ----------------------------------------------------------
+   Navbar links — Bootstrap defaults make them semi-transparent
+   unless hovered/active. Force them to white.
+   ---------------------------------------------------------- */
+.navbar-dark .navbar-nav .nav-link {
+    color: #fff;
+    font-size: 1.3rem;
+    line-height: 1.2;
+}
+.navbar-dark .navbar-nav .nav-link:hover,
+.navbar-dark .navbar-nav .nav-link:focus,
+.navbar-dark .navbar-nav .nav-link.active {
+    color: #fff;
+}
+
+/* ----------------------------------------------------------
    Modals — JS controls display via style.display, not
    Bootstrap's Modal JS. We add the overlay directly.
    ---------------------------------------------------------- */

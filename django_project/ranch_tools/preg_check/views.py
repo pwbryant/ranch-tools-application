@@ -115,6 +115,7 @@ class PregCheckListView(ListView, InitialzeDatabaseMixin):
 
         ear_tag_id = self.request.GET.get('search_ear_tag_id', '')
         rfid = self.request.GET.get('search_rfid')
+
         animals = get_matching_cows(ear_tag_id=ear_tag_id, rfid=rfid, birth_year=birth_year)
         animal_exists = animals.exists()
 

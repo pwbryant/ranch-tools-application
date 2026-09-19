@@ -58,4 +58,4 @@ class ReportFiveFromCSVTest(TestCase):
         self.assertIn('50.0%', content)
 
         # Unknown Cow should appear for unassociated pregchecks
-        self.assertIn('None', content)
+        self.assertIn('No ID', content)

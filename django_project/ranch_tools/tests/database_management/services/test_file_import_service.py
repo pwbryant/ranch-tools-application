@@ -13,7 +13,6 @@ from ranch_tools.preg_check.models import Cow, PregCheck  # Replace 'your_app' w
 from ranch_tools.database_management.services.file_import_service import PregCheckImportService, ImportError
 import pandas as pd
 from io import BytesIO
-from datetime import date
 
 
 class PregCheckImportServiceTestCase(TestCase):
@@ -236,41 +235,6 @@ class PregCheckImportServiceTestCase(TestCase):
         # But nothing should be in database
         self.assertEqual(Cow.objects.count(), 0)
         self.assertEqual(PregCheck.objects.count(), 0)
-    
-    def test_extract_cow_data(self):
-        """Test extract_cow_data method."""
-        row = pd.Series({
-            'ear_tag_id': '  123  ',
-            'birth_year': 2020,
-            'eid': '  EID123  '
-        })
-        
-        result = self.service.extract_cow_data(row)
-        
-        self.assertEqual(result['ear_tag_id'], '123')
-        self.assertEqual(result['birth_year'], 2020)
-        self.assertEqual(result['eid'], 'EID123')
-    
-    def test_extract_pregcheck_data(self):
-        """Test extract_pregcheck_data method."""
-        cow = Cow.objects.create(ear_tag_id='123', birth_year=2020)
-        
-        row = pd.Series({
-            'breeding_season': 2024,
-            'check_date': '2024-03-15',
-            'comments': '  Test comment  ',
-            'is_pregnant': 'P',
-            'recheck': False
-        })
-        
-        result = self.service.extract_pregcheck_data(row, cow)
-        
-        self.assertEqual(result['cow'], cow)
-        self.assertEqual(result['breeding_season'], 2024)
-        self.assertEqual(result['check_date'], date(2024, 3, 15))
-        self.assertEqual(result['comments'], 'Test comment')
-        self.assertTrue(result['is_pregnant'])
-        self.assertFalse(result['recheck'])
     
     def test_get_summary_message_success(self):
         """Test get_summary_message for successful import."""

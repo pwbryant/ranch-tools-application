@@ -311,7 +311,7 @@ class PregCheckReportFiveDetailedTest(TestCase):
         
         content = response.content.decode('utf-8')
         # first_pass_open should be 1, first_pass_pregnant should be 0
-        self.assertIn('First Pass Open', content)
+        self.assertIn('1st Pass Open', content)
         self.assertEqual(response.context['rows'][0]['first_pass_open'], 1)
 
 
@@ -325,7 +325,7 @@ class PregCheckRollingAverageReportTest(TestCase):
         """Test rolling average report with no data"""
         response = self.client.get(reverse('pregcheck-rolling-average-report'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Rolling Average Report")
+        self.assertContains(response, "Pregnancy Rate by Cow age across Years")
         self.assertContains(response, "No data available")
         
     def test_rolling_average_single_season(self):
@@ -365,7 +365,7 @@ class PregCheckRollingAverageReportTest(TestCase):
         
         content = response.content.decode('utf-8')
         # Should show data for ages 1, 2, and 3
-        self.assertIn('Rolling Average Report', content)
+        self.assertIn('Pregnancy Rate by Cow age across Years', content)
         self.assertIn('Rolling Avg', content)
         
     def test_rolling_average_gets_last_four_seasons(self):

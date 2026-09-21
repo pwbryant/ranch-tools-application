@@ -52,7 +52,7 @@ class PregCheckImportServiceTestCase(TestCase):
         }]
         
         excel_file = self.create_excel_file(data)
-        result = self.service.import_from_file(excel_file)
+        result = self.service.import_from_file(excel_file, 'pregcheck')
         
         self.assertEqual(result['cows_created'], 1)
         self.assertEqual(result['pregchecks_created'], 1)
@@ -68,6 +68,40 @@ class PregCheckImportServiceTestCase(TestCase):
         self.assertEqual(pregcheck.cow, cow)
         self.assertEqual(pregcheck.breeding_season, 2024)
         self.assertTrue(pregcheck.is_pregnant)
+
+    def test_duplicate_cow_import_is_reported_without_transaction_error(self):
+        Cow.objects.create(ear_tag_id='123', birth_year=2020, eid='EID123')
+        data = [{
+            'ear_tag_id': '123',
+            'birth_year': 2020,
+            'eid': 'EID123',
+            'comments': 'Duplicate cow',
+        }]
+
+        excel_file = self.create_excel_file(data)
+        with self.assertRaises(ImportError) as context:
+            self.service.import_from_file(excel_file, 'cow')
+
+        self.assertIn('Row 2: Duplicate cow already in DB.', str(context.exception))
+        self.assertNotIn('current transaction', str(context.exception))
+        self.assertEqual(Cow.objects.count(), 1)
+
+    def test_duplicate_cow_identity_mismatch_is_reported_without_transaction_error(self):
+        Cow.objects.create(ear_tag_id='123', birth_year=2020, eid='EID123')
+        data = [{
+            'ear_tag_id': '123',
+            'birth_year': 2020,
+            'eid': 'EID456',
+            'comments': 'Duplicate cow identity',
+        }]
+
+        excel_file = self.create_excel_file(data)
+        with self.assertRaises(ImportError) as context:
+            self.service.import_from_file(excel_file, upload_type='cow')
+
+        self.assertIn('Row 2: Duplicate cow already in DB.', str(context.exception))
+        self.assertNotIn('current transaction', str(context.exception))
+        self.assertEqual(Cow.objects.count(), 1)
         
     def test_import_multiple_pregchecks_for_same_cow(self):
         """Test importing multiple pregnancy checks for the same cow."""
@@ -95,7 +129,7 @@ class PregCheckImportServiceTestCase(TestCase):
         ]
         
         excel_file = self.create_excel_file(data)
-        result = self.service.import_from_file(excel_file)
+        result = self.service.import_from_file(excel_file, 'pregcheck')
         
         self.assertEqual(result['cows_created'], 1)
         self.assertEqual(result['pregchecks_created'], 2)
@@ -112,7 +146,7 @@ class PregCheckImportServiceTestCase(TestCase):
         
         excel_file = self.create_excel_file(data)
         with self.assertRaises(ValidationError) as context:
-            self.service.import_from_file(excel_file)
+            self.service.import_from_file(excel_file, 'pregcheck')
         
         self.assertIn('Missing required columns', str(context.exception))
     
@@ -144,7 +178,7 @@ class PregCheckImportServiceTestCase(TestCase):
         excel_file = self.create_excel_file(data)
         
         with self.assertRaises(ValidationError) as context:
-            self.service.import_from_file(excel_file)
+            self.service.import_from_file(excel_file, 'pregcheck')
         
         self.assertIn('Duplicate. Ear Tag: 123, Birth Year: 2020, Check Date: 2024-03-15', 
                       str(context.exception))
@@ -177,7 +211,7 @@ class PregCheckImportServiceTestCase(TestCase):
         excel_file = self.create_excel_file(data)
         
         with self.assertRaises(ValidationError) as context:
-            self.service.import_from_file(excel_file)
+            self.service.import_from_file(excel_file, 'pregcheck')
         
         self.assertIn('Duplicate. EID: EID123, Check Date: 2024-03-15', str(context.exception))
     
@@ -209,7 +243,7 @@ class PregCheckImportServiceTestCase(TestCase):
         excel_file = self.create_excel_file(data)
         
         # Should not raise ValidationError for EID duplicates
-        result = self.service.import_from_file(excel_file)
+        result = self.service.import_from_file(excel_file, 'pregcheck')
         self.assertEqual(result['pregchecks_created'], 2)
     
     def test_dry_run_does_not_save_to_database(self):
@@ -226,7 +260,7 @@ class PregCheckImportServiceTestCase(TestCase):
         }]
         
         excel_file = self.create_excel_file(data)
-        result = self.service.import_from_file(excel_file, dry_run=True)
+        result = self.service.import_from_file(excel_file, 'pregcheck', dry_run=True)
         
         # Stats should show what would have been created
         self.assertEqual(result['cows_created'], 1)
@@ -293,7 +327,7 @@ class PregCheckImportServiceTestCase(TestCase):
         
         excel_file = self.create_excel_file(data)
         with self.assertRaises(ImportError):
-            self.service.import_from_file(excel_file)
+            self.service.import_from_file(excel_file, 'pregcheck')
         # Verify nothing was saved due to transaction rollback
         self.assertEqual(Cow.objects.count(), 0)
         self.assertEqual(PregCheck.objects.count(), 0)

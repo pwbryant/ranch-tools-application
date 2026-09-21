@@ -405,10 +405,11 @@ class DatabaseManagementViewTestCase(TestCase):
         with open(temp_file, 'rb') as f:
             uploaded_file = SimpleUploadedFile('test_import.csv', f.read())
 
-        request = self.factory.post('/database-management/')
+        request = self.factory.post('/database-management/', data={'update_type': 'pregcheck'})
         self.add_session_and_messages_middleware(request)
 
-        request.FILES['update_db'] = uploaded_file        
+        request.FILES['update_db'] = uploaded_file
+        # request.POST['update_type'] = 'pregcheck'
         # Patch pandas.read_csv to return our DataFrame
         with patch.object(self.view, 'create_backup_for_import', return_value=os.path.join(self.temp_dir, 'import_backup.sqlite3')):
             with patch('pandas.read_csv', return_value=df):

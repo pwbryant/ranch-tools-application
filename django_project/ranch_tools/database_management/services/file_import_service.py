@@ -54,7 +54,7 @@ class PregCheckImportService:
             'errors': []
         }
 
-    def import_from_file(self, file: BinaryIO, dry_run: bool = False) -> Dict[str, Any]:
+    def import_from_file(self, file: BinaryIO, upload_type: str, dry_run: bool = False) -> Dict[str, Any]:
         """
         Import pregnancy check data from an Excel file.
         
@@ -83,28 +83,24 @@ class PregCheckImportService:
 
             from .file_import_dataframe_processors import CowDataFrameProcessor, PregcheckDataFrameProcessor
 
-            # if import_type == 'pregchecks':
-            dataframe_processor = PregcheckDataFrameProcessor()
-            # elif import_type == 'cows':
-            #     dataframe_processor = CowDataFrameProcessor()
-            # else:
-            #     raise Exception('Invalid import type. Supported types are "pregchecks" or "cows"')
+            if upload_type == 'pregcheck':
+                dataframe_processor = PregcheckDataFrameProcessor()
+            elif upload_type == 'cow':
+                dataframe_processor = CowDataFrameProcessor()
+            else:
+                raise Exception('Invalid import type. Supported types are "pregchecks" or "cows"')
 
             # Remove blank rows
-            # df = self.remove_blank_rows(df)
             df = dataframe_processor.remove_blank_rows(df)
 
             # Standardize data
-            # df = self.standardize_dataframe(df)
             df = dataframe_processor.standardize_dataframe(df)
 
             # Validate structure
-            # self.validate_dataframe(df)
             dataframe_processor.validate_dataframe(df)
             
             # Process data within a transaction
             with transaction.atomic():
-                # self.process_dataframe(df)
                 dataframe_processor.process_dataframe(df)
                 
                 # Check for errors

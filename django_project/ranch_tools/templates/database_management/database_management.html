@@ -120,28 +120,60 @@
     <!-- Update with Excel/CSV -->
     <div class="col-12 col-md-6">
         <div class="card h-100">
-            <div class="card-header fw-semibold">Update Database with Excel / CSV</div>
+            <div class="card-header fw-semibold">Pregchecks: Update Database with Excel / CSV</div>
             <div class="card-body">
                 <div class="alert alert-info small">
                     <strong>Info:</strong> Use this form to add new records by uploading an Excel or CSV file.
                     The file should contain columns: ear_tag_id, birth_year, eid, breeding_season,
                     check_date, comments, is_pregnant, recheck.
                 </div>
-                <form method="post" enctype="multipart/form-data" id="updateForm">
+                <form method="post" enctype="multipart/form-data" id="pregcheckUpdateForm">
                     {% csrf_token %}
                     <input type="hidden" name="create_backup" value="1">
-                    <input type="hidden" id="updateBackupPath" name="backup_path" value="">
+                    <input type="hidden" id="pregcheckUpdateBackupPath" name="backup_path" value="">
+                    <input type="hidden" id="pregcheck_update_type" name="update_type" value="pregcheck">
                     <div class="border border-2 rounded p-4 text-center mb-3"
                          style="cursor:pointer; border-style: dashed !important;"
-                         onclick="document.getElementById('update_db').click()">
+                         onclick="document.getElementById('pregcheck_update_db').click()">
                         <div class="fs-1 mb-2 text-primary">&#128196;</div>
                         <p class="mb-1">Click to select an Excel or CSV file</p>
                         <p class="text-muted small mb-0">Supported: .xlsx, .xls, .csv</p>
-                        <div id="updateFileName" class="mt-2 fw-semibold text-primary small"></div>
+                        <div id="pregcheckUpdateFileName" class="mt-2 fw-semibold text-primary small"></div>
                     </div>
-                    <input type="file" id="update_db" name="update_db" accept=".xlsx,.xls,.csv" class="d-none">
-                    <button type="submit" class="btn btn-primary w-100" id="updateBtn" disabled>
-                        Add Records
+                    <input type="file" id="pregcheck_update_db" name="update_db" accept=".xlsx,.xls,.csv" class="d-none">
+                    <button type="submit" class="btn btn-primary w-100" id="pregcheckUpdateBtn" disabled>
+                        Add Pregcheck Records
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+        <!-- Update with Excel/CSV -->
+    <div class="col-12 col-md-6">
+        <div class="card h-100">
+            <div class="card-header fw-semibold">Cows: Update Database with Excel / CSV</div>
+            <div class="card-body">
+                <div class="alert alert-info small">
+                    <strong>Info:</strong> Use this form to add new records by uploading an Excel or CSV file.
+                    The file should contain columns: ear_tag_id, birth_year, eid, comments.
+                </div>
+                <form method="post" enctype="multipart/form-data" id="cowUpdateForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="create_backup" value="1">
+                    <input type="hidden" id="cowUpdateBackupPath" name="backup_path" value="">
+                    <input type="hidden" id="cow_update_type" name="update_type" value="cow">
+                    <div class="border border-2 rounded p-4 text-center mb-3"
+                         style="cursor:pointer; border-style: dashed !important;"
+                         onclick="document.getElementById('cow_update_db').click()">
+                        <div class="fs-1 mb-2 text-primary">&#128196;</div>
+                        <p class="mb-1">Click to select an Excel or CSV file</p>
+                        <p class="text-muted small mb-0">Supported: .xlsx, .xls, .csv</p>
+                        <div id="cowUpdateFileName" class="mt-2 fw-semibold text-primary small"></div>
+                    </div>
+                    <input type="file" id="cow_update_db" name="update_db" accept=".xlsx,.xls,.csv" class="d-none">
+                    <button type="submit" class="btn btn-primary w-100" id="cowUpdateBtn" disabled>
+                        Add Cow Records
                     </button>
                 </form>
             </div>
@@ -167,10 +199,10 @@
         }
     });
 
-    document.getElementById('update_db').addEventListener('change', function(e) {
+    document.getElementById('pregcheck_update_db').addEventListener('change', function(e) {
         const fileName = e.target.files[0]?.name;
-        const fileNameDiv = document.getElementById('updateFileName');
-        const updateBtn  = document.getElementById('updateBtn');
+        const fileNameDiv = document.getElementById('pregcheckUpdateFileName');
+        const updateBtn  = document.getElementById('pregcheckUpdateBtn');
         if (fileName) {
             fileNameDiv.textContent = `Selected: ${fileName}`;
             updateBtn.disabled = false;
@@ -180,11 +212,25 @@
         }
     });
 
-    document.getElementById('updateForm').addEventListener('submit', async function(e) {
+    document.getElementById('cow_update_db').addEventListener('change', function(e) {
+        const fileName = e.target.files[0]?.name;
+        const fileNameDiv = document.getElementById('cowUpdateFileName');
+        const updateBtn  = document.getElementById('cowUpdateBtn');
+        if (fileName) {
+            fileNameDiv.textContent = `Selected: ${fileName}`;
+            updateBtn.disabled = false;
+        } else {
+            fileNameDiv.textContent = '';
+            updateBtn.disabled = true;
+        }
+    });
+
+
+    document.getElementById('pregcheckUpdateForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const form = this;
-        const updateBtn = document.getElementById('updateBtn');
-        const backupPathInput = document.getElementById('updateBackupPath');
+        const updateBtn = document.getElementById('pregcheckUpdateBtn');
+        const backupPathInput = document.getElementById('pregcheckUpdateBackupPath');
 
         if (!confirm('A backup of the current database will be created before importing. Continue?')) return;
 
@@ -232,6 +278,74 @@
         updateBtn.textContent = 'Creating Backup...';
         form.submit();
     });
+
+    document.getElementById('cowUpdateForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        console.log('submit cowUpdateForm');
+        const form = this;
+        const updateBtn = document.getElementById('cowUpdateBtn');
+        const backupPathInput = document.getElementById('cowUpdateBackupPath');
+        console.log('here 1');
+
+        if (!confirm('A backup of the current database will be created before importing. Continue?')) return;
+        console.log('here 2');
+
+        const originalText = updateBtn.textContent;
+        updateBtn.textContent = 'Preparing backup...';
+        updateBtn.disabled = true;
+
+        if (window.require) {
+            console.log('here 3');
+
+            try {
+                const { ipcRenderer } = window.require('electron');
+                const defaultName = `ranch_tools_backup_${new Date().toISOString().slice(0,10)}.sqlite3`;
+                const result = await ipcRenderer.invoke('show-save-dialog', {
+                    title: 'Save Database Backup',
+                    defaultPath: defaultName,
+                    filters: [
+                        { name: 'SQLite Database', extensions: ['sqlite3', 'db'] },
+                        { name: 'All Files', extensions: ['*'] }
+                    ]
+                });
+                console.log('here 4');
+
+                if (result && !result.canceled && result.filePath) {
+                    backupPathInput.value = result.filePath;
+                    updateBtn.textContent = 'Creating Backup...';
+                    console.log('here 5');
+
+                    form.submit();
+                } else {
+                    console.log('here 6');
+
+                    updateBtn.textContent = originalText;
+                    updateBtn.disabled = false;
+                }
+            } catch (err) {
+                console.error('Electron save dialog failed:', err);
+                alert('Unable to open save dialog. Please try again.');
+                updateBtn.textContent = originalText;
+                updateBtn.disabled = false;
+            }
+            console.log('here 7');
+
+            return;
+        }
+
+        const defaultName = `ranch_tools_backup_${new Date().toISOString().slice(0,10)}.sqlite3`;
+        const userPath = prompt('Enter a filename for the backup:', defaultName);
+        if (userPath === null) {
+            updateBtn.textContent = originalText;
+            updateBtn.disabled = false;
+            return;
+        }
+        console.log('here');
+        backupPathInput.value = userPath.trim() || defaultName;
+        updateBtn.textContent = 'Creating Backup...';
+        form.submit();
+    });
+
 
     document.getElementById('uploadForm').addEventListener('submit', function(e) {
         if (!confirm('Are you sure you want to replace the current database? A backup will be created, but this cannot be undone.')) {

@@ -15,7 +15,7 @@ from django.views import View
 from django.db import connection
 from django.core.management import call_command
 
-from ranch_tools.database_management.services.file_import_service import PregCheckImportService
+from ranch_tools.database_management.services.file_import_service import ImportError, PregCheckImportService
 from ranch_tools.preg_check.models import PregCheck
 from ranch_tools.utils.mixins import InitialzeDatabaseMixin
       
@@ -123,11 +123,15 @@ class DatabaseManagementView(View, InitialzeDatabaseMixin):
             self.cleanup_temp_file(temp_path)
             return redirect('database_management')
 
+        print(request.POST)
+        update_type = request.POST['update_type']
         try:
             with open(temp_path, 'rb') as f:
-                PregCheckImportService().import_from_file(f, dry_run=False)
+                PregCheckImportService().import_from_file(f, update_type, dry_run=False)
         except ValidationError as e:
             messages.error(request, mark_safe(f'Import failed: {str(e)}'))
+        except ImportError as e:
+            messages.error(request, mark_safe(str(e).replace('\n', '<br>')))
 
         self.cleanup_temp_file(temp_path)
         return redirect('database_management')
